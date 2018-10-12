@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import numpy as np
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
