@@ -65,7 +65,7 @@ def split_data(x, y, ids, ratio, seed=1):
     return train_x, train_y, train_ids, test_x, test_y, test_ids
 
 
-def split_data_rand(x, y, ids, ratio, seed=1):
+def split_data_rand(y, x, ids, ratio, seed=1):
     """Split data to training and testing set given the ratio."""
     # print(x[1,:])
     np.random.seed(seed)
@@ -80,42 +80,34 @@ def split_data_rand(x, y, ids, ratio, seed=1):
     # print(x[1,:])
     train_x = x[0:np.floor(ratio * len(x)).astype(int)]
     train_y = y[0:np.floor(ratio * len(x)).astype(int)]
-    train_ids = y[0:np.floor(ratio * len(x)).astype(int)]
+    train_ids = ids[0:np.floor(ratio * len(x)).astype(int)]
 
     test_x = x[np.floor(ratio * len(x)).astype(int):len(x)]
     test_y = y[np.floor(ratio * len(x)).astype(int):len(x)]
-    test_ids = y[np.floor(ratio * len(x)).astype(int):len(x)]
+    test_ids = ids[np.floor(ratio * len(x)).astype(int):len(x)]
 
-    return train_x, train_y, train_ids, test_x, test_y, test_ids
+    return train_y, train_x, train_ids, test_y, test_x, test_ids
 
 
 def standardize(x):
     """Standardise each feature. Returns mean of last feat."""
-
     for i  in range(x.shape[1]):
-
         feature = x[:,i]
         invalid = [feature == -999.0]
         valid   = [feature != -999.0]
-
         mean    = np.mean(feature[valid])
         std     = np.std(feature[valid])
-
         feature = (feature-mean)/std
-
         feature[invalid] = 0
         x[:,i] = feature
-
     return x, mean, std
 
 
 # def standardize(x):
 #     """Standardize the original data set."""
 #     mean_x = np.mean(x)
-#     # print("MEANS ARE: ", mean_x)
 #     x = x - mean_x
 #     std_x = np.std(x)
-#     # print("STDS ARE: ", std_x)
 #     x = x / std_x
 #     return x, mean_x, std_x
 
