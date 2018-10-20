@@ -64,29 +64,48 @@ def split_data(x, y, ids, ratio, seed=1):
 
     return train_x, train_y, train_ids, test_x, test_y, test_ids
 
+# # My version. Uses reshape
+# def split_data_rand(y, x, ids, ratio, seed=1):
+#     """Split data to training and testing set given the ratio."""
+#     # print(x[1,:])
+#     np.random.seed(seed)
+#     #y = y.reshape(y.shape[0], 1)
+#     allData = np.concatenate((y, x), axis=1)
 
-def split_data_rand(y, x, ids, ratio, seed=1):
-    """Split data to training and testing set given the ratio."""
-    # print(x[1,:])
-    np.random.seed(seed)
-    y = y.reshape(y.shape[0], 1)
-    allData = np.concatenate((y, x), axis=1)
+#     np.random.shuffle(allData)
 
-    np.random.shuffle(allData)
+#     y = allData[:, 0]
+#     x = allData[:, 1:]
 
-    y = allData[:, 0]
-    x = allData[:, 1:]
+#     # print(x[1,:])
+#     train_x = x[0:np.floor(ratio * len(x)).astype(int)]
+#     train_y = y[0:np.floor(ratio * len(x)).astype(int)]
+#     train_ids = ids[0:np.floor(ratio * len(x)).astype(int)]
 
-    # print(x[1,:])
-    train_x = x[0:np.floor(ratio * len(x)).astype(int)]
-    train_y = y[0:np.floor(ratio * len(x)).astype(int)]
-    train_ids = ids[0:np.floor(ratio * len(x)).astype(int)]
+#     test_x = x[np.floor(ratio * len(x)).astype(int):len(x)]
+#     test_y = y[np.floor(ratio * len(x)).astype(int):len(x)]
+#     test_ids = ids[np.floor(ratio * len(x)).astype(int):len(x)]
 
-    test_x = x[np.floor(ratio * len(x)).astype(int):len(x)]
-    test_y = y[np.floor(ratio * len(x)).astype(int):len(x)]
-    test_ids = ids[np.floor(ratio * len(x)).astype(int):len(x)]
+#     return train_y, train_x, train_ids, test_y, test_x, test_ids
 
-    return train_y, train_x, train_ids, test_y, test_x, test_ids
+
+def split_data_rand(y, x, ratio, myseed=1):
+    """split the dataset based on the split ratio."""
+    # set seed
+    np.random.seed(myseed)
+    # generate random indices
+    num_row = len(y)
+    indices = np.random.permutation(num_row)
+    index_split = int(np.floor(ratio * num_row))
+    index_tr = indices[: index_split]
+    index_te = indices[index_split:]
+    # create split
+    x_tr = x[index_tr]
+    x_te = x[index_te]
+    y_tr = y[index_tr]
+    y_te = y[index_te]
+    return y_tr, x_tr, y_te, x_te 
+
 
 
 def k_fold_random_split(x, y, k, seed=1):
@@ -154,7 +173,7 @@ def sigmoid(z):
     
 #     return y_pred
 
-def predict_labels(weights, data, is_logistic):
+def predict_labels(weights, data, is_logistic=False):
     """Generate class predictions given weights, and a test data matrix."""
     if is_logistic:
         y_pred = np.dot(data, weights)

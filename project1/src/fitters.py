@@ -45,8 +45,10 @@ class Fitter(metaclass=abc.ABCMeta):
 
     def _train_and_validate(self, data_y, data_x, data_ids, f, *args, ratio=0.7):
         # Split data
-        train_y, train_x, train_ids, lc_test_y, lc_test_x, lc_test_ids = \
-            parsers.split_data_rand(data_y, data_x, data_ids, self.validation_param)
+        # train_y, train_x, train_ids, lc_test_y, lc_test_x, lc_test_ids = \
+        #     parsers.split_data_rand(data_y, data_x, data_ids, self.validation_param)
+        train_y, train_x, lc_test_y, lc_test_x= \
+            parsers.split_data_rand(data_y, data_x, self.validation_param)
         # call train function
         w, err = f(train_y, train_x, *args)
 
