@@ -4,7 +4,6 @@ import numpy as np
 import os
 
 import implementations as impl
-import helpers
 from util import loaders, parsers, testers
 
 
@@ -54,7 +53,7 @@ class Fitter(metaclass=abc.ABCMeta):
         w, err = f(train_y, train_x, w_init, *args)
 
         # Predict labels for local testing data
-        lc_pred_y = helpers.predict_labels(w, lc_test_x)
+        lc_pred_y = parsers.predict_labels(w, lc_test_x)
 
         # TODO: Also return test error
 

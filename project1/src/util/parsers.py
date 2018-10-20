@@ -88,6 +88,7 @@ def split_data_rand(y, x, ids, ratio, seed=1):
 
     return train_y, train_x, train_ids, test_y, test_x, test_ids
 
+
 def k_fold_random_split(x, y, k, seed=1):
 
     # Create space for k subsets of the initial dataset
@@ -110,6 +111,7 @@ def k_fold_random_split(x, y, k, seed=1):
     ysubsets[k - 1] = y[indices[(k - 1) * rows :]]
 
     return xsubsets, ysubsets
+
 
 def standardize(x):
     """Standardise each feature. Returns mean of last feat."""

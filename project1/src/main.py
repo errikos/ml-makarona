@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import click
 import fitters as ft
-import helpers
 from util import loaders
 import os
 
@@ -15,7 +14,7 @@ def cli():
 def gd():
     fitter = ft.GD_fitter(0.8, 1000, 0.2)
     data_path = os.path.join("..", "data", "train.csv")
-    tmp_y, tmp_tx, tmp_ids = helpers.load_csv_data(data_path)
+    tmp_y, tmp_tx, tmp_ids = loaders.load_csv_data(data_path)
     fitter.run(tmp_y, tmp_tx, tmp_ids)
 
 
