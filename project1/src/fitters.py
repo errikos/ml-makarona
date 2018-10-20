@@ -45,8 +45,8 @@ class Fitter(metaclass=abc.ABCMeta):
         # Split data
         # train_y, train_x, train_ids, lc_test_y, lc_test_x, lc_test_ids = \
         #     parsers.split_data_rand(data_y, data_x, data_ids, self.validation_param)
-        train_y, train_x, lc_test_y, lc_test_x= \
-            parsers.split_data_rand(data_y, data_x, self.validation_param)
+        train_y, train_x, lc_test_y, lc_test_x = parsers.split_data_rand(data_y, data_x,
+                                                                         self.validation_param)
         # call train function
         w, err = f(train_y, train_x, *args)
 
@@ -67,7 +67,8 @@ class Fitter(metaclass=abc.ABCMeta):
         pass
 
 
-class GD_fitter(Fitter):
+class GDFitter(Fitter):
+    """Fitter implementing linear regression using gradient descent."""
 
     def __init__(self, ratio, max_iter, gamma, **kwargs):
         super().__init__(ratio, **kwargs)
