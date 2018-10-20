@@ -6,6 +6,7 @@ import os
 import implementations as impl
 import costs
 from util import loaders, parsers, testers
+import costs
 
 
 class Fitter(metaclass=abc.ABCMeta):
@@ -53,11 +54,11 @@ class Fitter(metaclass=abc.ABCMeta):
         # call train function
         w, err = f(train_y, train_x, *args)
 
-        # Predict labels for local testing data
-        lc_pred_y = parsers.predict_labels(w, lc_test_x)
-
         # TODO: Check if test error is correct and return it
         test_error = costs.compute_mse(lc_test_y, lc_test_x, w)
+
+        # Predict labels for local testing data
+        lc_pred_y = parsers.predict_labels(w, lc_test_x)
 
         matches = np.sum(lc_test_y == lc_pred_y)
         accuracy = matches / lc_test_y.shape[0]
@@ -75,6 +76,7 @@ class Fitter(metaclass=abc.ABCMeta):
 
         # Train and validate k times, each time picking subset i as the test set
         averageTestError = 0
+        averageAccuracy = 0
         for i in range(k):
 
             # Concatenate k-1 subsets 
@@ -84,11 +86,22 @@ class Fitter(metaclass=abc.ABCMeta):
             # call train function
             w, err = f(train_y, train_x, *args)
 
+            # TODO Return average test error
             # Calculate test error, with subset i as test set
             averageTestError += costs.compute_mse(subsets_y[i], subsets_x[i], w)
 
+            # Predict labels for local testing data
+            lc_pred_y = parsers.predict_labels(w, subsets_x[i])
+
+            matches = np.sum(subsets_y[i] == lc_pred_y)
+            averageAccuracy += matches / subsets_y[i].shape[0]
+
         averageTestError /= k
-        return averageTestError
+        averageAccuracy /= k
+
+        print("averageAccuracy: " + str(averageAccuracy))
+
+        return w, averageTestError
 
 
 class GDFitter(Fitter):
