@@ -18,7 +18,7 @@ class Fitter(metaclass=abc.ABCMeta):
             data_x = parsers.cut_features(data_x)
         if self.do_rm_samples:
             data_y, data_x = parsers.cut_samples(data_y, data_x)
-        if self.do_std:
+        # if self.do_std:
             # for i  in range(x.shape[1]): IndexError: tuple index out of range
             # data_x, mean, std = parsers.standardize(data_x)
         data_x = parsers.build_poly(data_x, self.degree, True)
