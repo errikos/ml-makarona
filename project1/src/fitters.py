@@ -14,12 +14,13 @@ class Fitter(metaclass=abc.ABCMeta):
         self.do_rm_features = do_rm_features
         
     def run(self, data_x, data_y, data_ids):
-        if do_rmv_feat:
+        if self.do_rm_features:
             data_x = parsers.cut_features(data_x)
-        if do_rmv_samples:
+        if self.do_rm_samples:
             data_y, data_x = parsers.cut_samples(data_y, data_x)
-        if do_standardise:
-            data_x, mean, std = parsers.standardize(tmp_tx)
+        if self.do_std:
+            # for i  in range(x.shape[1]): IndexError: tuple index out of range
+            # data_x, mean, std = parsers.standardize(data_x)
         data_x = parsers.build_poly(data_x, self.degree, True)
         self.data_x, self.data_y, self.data_ids = data_x, data_y, data_ids 
         self.mean, self.std = mean, std
@@ -28,12 +29,12 @@ class Fitter(metaclass=abc.ABCMeta):
 class GD_fitter(Fitter):
 
     def __init__(self, ratio, max_iter, gamma, **kwargs):
-        super().__init__(self, ratio, **kwargs)
+        super().__init__(ratio, **kwargs)
         self.max_iter = max_iter
         self.gamma = gamma
 
     def run(self, data_x, data_y, data_ids):
-        super().run(self, data_x, data_y, data_ids)
+        super().run(data_x, data_y, data_ids)
         # Split data to training and testing
         train_x, train_y, train_ids, lc_test_x, lc_test_y, lc_test_ids = \
             parsers.split_data_rand(self.data_x, self.data_y, self.data_ids, self.ratio)

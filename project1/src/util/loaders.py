@@ -3,6 +3,7 @@
 import numpy as np
 import csv
 
+
 # def load_data():
 #     """Load data."""
 #     data = np.loadtxt("dataEx3.csv", delimiter=",", skiprows=1, unpack=True)
