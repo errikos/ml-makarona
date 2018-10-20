@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import click
+import fitters as ft
 
 
 @click.group()
@@ -9,7 +10,7 @@ def cli():
 
 @cli.command(help='Gradient Descent')
 def gd():
-    pass
+    fitter = ft.GD_fitter(0.8,1000,0.5)
 
 
 @cli.command(help='Stochastic Gradient Descent')
