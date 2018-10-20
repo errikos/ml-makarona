@@ -12,7 +12,7 @@ def cli():
 
 @cli.command(help='Gradient Descent')
 def gd():
-    fitter = ft.GDFitter(0.8, 1000, 0.2)
+    fitter = ft.GDFitter(0.8, 8000, 0.02, degree=1, do_std = True, do_rm_samples = False)
     data_path = os.path.join("..", "data", "train.csv")
     tmp_y, tmp_tx, tmp_ids = loaders.load_csv_data(data_path)
     fitter.run(tmp_y, tmp_tx, tmp_ids)

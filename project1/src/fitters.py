@@ -36,7 +36,7 @@ class Fitter(metaclass=abc.ABCMeta):
         # TODO Move build_poly inside train and validate(?)
         # Build polynomial
         data_x = parsers.build_poly(data_x, self.degree, True)
-        self.mean, self.std = mean, std
+        # self.mean, self.std = mean, std
 
         if self.do_tune_hyper:
             self._run_hyper(data_y, data_x, data_ids)
@@ -60,7 +60,7 @@ class Fitter(metaclass=abc.ABCMeta):
 
         matches = np.sum(lc_test_y == lc_pred_y)
         accuracy = matches / lc_test_y.shape[0]
-
+        print("Accuracy on local testing data is: ", accuracy)
         return w, accuracy
 
     def _make_predictions(self, w):

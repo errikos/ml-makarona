@@ -131,28 +131,28 @@ def k_fold_random_split(y, x, k, seed=1):
 
     return subsets_y, subsets_x
 
+# My version
+# def standardize(x):
+#     """Standardise each feature. Returns mean of last feat."""
+#     for i  in range(x.shape[1]):
+#         feature = x[:,i]
+#         invalid = [feature == -999.0]
+#         valid   = [feature != -999.0]
+#         mean    = np.mean(feature[valid])
+#         std     = np.std(feature[valid])
+#         feature = (feature-mean)/std
+#         feature[invalid] = 0
+#         x[:,i] = feature
+#     return x, mean, std
+
 
 def standardize(x):
-    """Standardise each feature. Returns mean of last feat."""
-    for i  in range(x.shape[1]):
-        feature = x[:,i]
-        invalid = [feature == -999.0]
-        valid   = [feature != -999.0]
-        mean    = np.mean(feature[valid])
-        std     = np.std(feature[valid])
-        feature = (feature-mean)/std
-        feature[invalid] = 0
-        x[:,i] = feature
-    return x, mean, std
-
-
-# def standardize(x):
-#     """Standardize the original data set."""
-#     mean_x = np.mean(x)
-#     x = x - mean_x
-#     std_x = np.std(x)
-#     x = x / std_x
-#     return x, mean_x, std_x
+    """Standardize the original data set."""
+    mean_x = np.mean(x)
+    x = x - mean_x
+    std_x = np.std(x)
+    x = x / std_x
+    return x, mean_x, std_x
 
 
 def sigmoid(z):
@@ -191,7 +191,7 @@ def predict_labels(weights, data, is_logistic=False):
 
 def cut_samples(some_y, some_tx):
     """Remove all samples that have at least one -999 value."""
-    #some_y = some_y.reshape(some_y.shape[0], 1)
+    some_y = some_y.reshape(some_y.shape[0], 1)
     allData = np.concatenate((some_y, some_tx), axis=1)
     badRows, badCols = np.where(allData == -999)
     uniqueBadRows = np.unique(badRows)
