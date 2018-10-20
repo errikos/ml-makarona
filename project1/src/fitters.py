@@ -4,6 +4,7 @@ import numpy as np
 import os
 
 import implementations as impl
+import costs
 from util import loaders, parsers, testers
 
 
@@ -56,12 +57,13 @@ class Fitter(metaclass=abc.ABCMeta):
         lc_pred_y = parsers.predict_labels(w, lc_test_x)
 
         # TODO: Check if test error is correct and return it
-        testError = costs.compute_mse(lc_test_y, lc_test_x, w)
+        test_error = costs.compute_mse(lc_test_y, lc_test_x, w)
 
         matches = np.sum(lc_test_y == lc_pred_y)
         accuracy = matches / lc_test_y.shape[0]
-        print("Accuracy on local testing data is: ", accuracy)
-        return w, accuracy
+        print('Accuracy:', accuracy)
+
+        return w, test_error
 
     def _make_predictions(self, w):
         raise NotImplementedError
