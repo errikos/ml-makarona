@@ -88,6 +88,28 @@ def split_data_rand(y, x, ids, ratio, seed=1):
 
     return train_y, train_x, train_ids, test_y, test_x, test_ids
 
+def k_fold_random_split(x, y, k, seed=1):
+
+    # Create space for k subsets of the initial dataset
+    xsubsets = [None] * k
+    ysubsets = [None] * k
+
+    # Rearrange the indices of the initial dataset
+    np.random.seed(seed)
+    indices = np.random.permutation(len(y))
+
+    # Calculate the number of rows per subset
+    rows = np.floor(len(y) / k).astype(int)
+
+    # Populate subsets
+    for i in range(k - 1):
+        xsubsets[i] = x[indices[i * rows : i * rows + rows]]
+        ysubsets[i] = y[indices[i * rows : i * rows + rows]]
+
+    xsubsets[k - 1] = x[indices[(k - 1) * rows :]]
+    ysubsets[k - 1] = y[indices[(k - 1) * rows :]]
+
+    return xsubsets, ysubsets
 
 def standardize(x):
     """Standardise each feature. Returns mean of last feat."""
