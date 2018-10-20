@@ -1,11 +1,23 @@
 """Implementations."""
 
 import numpy as np
+
 import costs
+import gradients
 
 
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
-    pass
+    # Define parameters to store w and loss
+    w = initial_w
+    for n_iter in range(max_iters):
+        # compute loss, gradient
+        grad, err = gradients.compute_gradient(y, tx, w)
+        loss = costs.mse(err)
+        # gradient w by descent update
+        w = w - gamma * grad
+        print("GD({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
+              bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
+    return w, loss
 
 
 def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
