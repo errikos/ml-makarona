@@ -49,7 +49,7 @@ class Fitter(metaclass=abc.ABCMeta):
         train_y, train_x, train_ids, lc_test_y, lc_test_x, lc_test_ids = \
             parsers.split_data_rand(data_y, data_x, data_ids, self.validation_param)
         # set initial w
-        w_init = np.zeros((train_x.shape[1], 1))
+        w_init = np.zeros((train_x.shape[1], ))
         # call train function
         w, err = f(train_y, train_x, w_init, *args)
 
