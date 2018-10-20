@@ -191,7 +191,7 @@ def predict_labels(weights, data, is_logistic=False):
 
 def cut_samples(some_y, some_tx):
     """Remove all samples that have at least one -999 value."""
-    some_y = some_y.reshape(some_y.shape[0], 1)
+    #some_y = some_y.reshape(some_y.shape[0], 1)
     allData = np.concatenate((some_y, some_tx), axis=1)
     badRows, badCols = np.where(allData == -999)
     uniqueBadRows = np.unique(badRows)
@@ -199,7 +199,7 @@ def cut_samples(some_y, some_tx):
     allData = np.delete(allData, uniqueBadRows, 0)
     cut_y = allData[:, 0]
     cut_tx = allData[:, 1:]
-    return cut_y, cut_tx
+    return cut_y.reshape((cut_y.shape[0],)), cut_tx
 
 
 def cut_features(some_tx):
