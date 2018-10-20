@@ -4,7 +4,7 @@ import implementations as impl
 from util import loaders, parsers, testers
 
 
-class Fitter(mataclass=abc.ABCMeta):
+class Fitter(metaclass=abc.ABCMeta):
 
     def __init__(self, ratio, degree=1, do_std=True, do_rm_samples=False, do_rm_features=False):
         self.ratio = ratio

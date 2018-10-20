@@ -11,6 +11,7 @@ def cli():
 @cli.command(help='Gradient Descent')
 def gd():
     fitter = ft.GD_fitter(0.8,1000,0.5)
+    fitter.run()
 
 
 @cli.command(help='Stochastic Gradient Descent')

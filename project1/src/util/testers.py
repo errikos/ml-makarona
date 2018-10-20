@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import parsers
 
 #x = np.array([   [[1],[2]]   ,  [[3],[4]]   ,   [[5],[6]]    ])
 #print(x.shape)
@@ -25,7 +24,7 @@ print(np.unique(tmp))
 
 #print(np.append(lambdas,3))
 
-x = np.array([[3, 4], [8, 9]])
-print(parsers.build_poly(x,3))
+# x = np.array([[3, 4], [8, 9]])
+# print(parsers.build_poly(x,3))
 
-zeroethPower = np.ones((x.shape[0], 1))
+# zeroethPower = np.ones((x.shape[0], 1))
