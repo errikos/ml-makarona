@@ -31,11 +31,9 @@ class Fitter(metaclass=abc.ABCMeta):
         if self.do_rm_samples:
             data_y, data_x = parsers.cut_samples(data_y, data_x)
         if self.do_std:
-            # for i  in range(x.shape[1]): IndexError: tuple index out of range
             data_x, mean, std = parsers.standardize(data_x)
         # Build polynomial
         data_x = parsers.build_poly(data_x, self.degree, True)
-        # self.data_x, self.data_y, self.data_ids = data_x, data_y, data_ids 
         self.mean, self.std = mean, std
 
         if self.do_tune_hyper:
@@ -60,18 +58,10 @@ class Fitter(metaclass=abc.ABCMeta):
         matches = np.sum(lc_test_y == lc_pred_y)
         accuracy = matches / lc_test_y.shape[0]
 
-        # -----------------------------------------------------------------------------------------
-        # TODO: Move to each subclass
-        test_path = os.path.join('..', 'data', 'test.csv')
-        test_y, test_tx, test_ids = loaders.load_csv_data(test_path)
+        return w, accuracy
 
-        if self.do_std:
-            test_tx, mean, std = parsers.standardize(test_tx)
-
-        test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
-        pred_y = parsers.predict_labels(w, parsers.build_poly(test_tx, self.degree, True), False)
-
-        loaders.create_csv_submission(test_ids, pred_y, "GD.csv")
+    def _make_predictions(self, w):
+        raise NotImplementedError
 
     def _train_and_cross_validate(self, data_x, data_y, data_ids, f, *args, k=4):
         pass
@@ -100,3 +90,15 @@ class GD_fitter(Fitter):
     def _tune_gamma(self):
         for v in range(1, 20):
             yield v / 10
+    
+    def _make_predictions(self, w):
+        test_path = os.path.join('..', 'data', 'test.csv')
+        _, test_tx, test_ids = loaders.load_csv_data(test_path)
+
+        if self.do_std:
+            test_tx, _, _ = parsers.standardize(test_tx)
+
+        test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
+        pred_y = parsers.predict_labels(w, parsers.build_poly(test_tx, self.degree, True))
+
+        loaders.create_csv_submission(test_ids, pred_y, "gd.csv")
