@@ -32,6 +32,8 @@ class Fitter(metaclass=abc.ABCMeta):
             data_y, data_x = parsers.cut_samples(data_y, data_x)
         if self.do_std:
             data_x, mean, std = parsers.standardize(data_x)
+
+        # TODO Move build_poly inside train and validate(?)
         # Build polynomial
         data_x = parsers.build_poly(data_x, self.degree, True)
         self.mean, self.std = mean, std
@@ -53,7 +55,8 @@ class Fitter(metaclass=abc.ABCMeta):
         # Predict labels for local testing data
         lc_pred_y = parsers.predict_labels(w, lc_test_x)
 
-        # TODO: Also return test error
+        # TODO: Check if test error is correct and return it
+        testError = costs.compute_mse(lc_test_y, lc_test_x, w)
 
         matches = np.sum(lc_test_y == lc_pred_y)
         accuracy = matches / lc_test_y.shape[0]
@@ -63,8 +66,27 @@ class Fitter(metaclass=abc.ABCMeta):
     def _make_predictions(self, w):
         raise NotImplementedError
 
-    def _train_and_cross_validate(self, data_x, data_y, data_ids, f, *args, k=4):
-        pass
+    def _train_and_cross_validate(self, data_y, data_x, data_ids, f, *args, k=4):
+    
+        # Create k subsets of the dataset
+        subsets_y, subsets_x = parsers.k_fold_random_split(data_y, data_x, k, seed=1)
+
+        # Train and validate k times, each time picking subset i as the test set
+        averageTestError = 0
+        for i in range(k):
+
+            # Concatenate k-1 subsets 
+            train_x = np.concatenate([subsets_x[j] for j in range(k) if j != i], 0)
+            train_y = np.concatenate([subsets_y[j] for j in range(k) if j != i], 0)
+
+            # call train function
+            w, err = f(train_y, train_x, *args)
+
+            # Calculate test error, with subset i as test set
+            averageTestError += costs.compute_mse(subsets_y[i], subsets_x[i], w)
+
+        averageTestError /= k
+        return averageTestError
 
 
 class GDFitter(Fitter):

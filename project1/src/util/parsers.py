@@ -108,11 +108,11 @@ def split_data_rand(y, x, ratio, myseed=1):
 
 
 
-def k_fold_random_split(x, y, k, seed=1):
+def k_fold_random_split(y, x, k, seed=1):
 
     # Create space for k subsets of the initial dataset
-    xsubsets = [None] * k
-    ysubsets = [None] * k
+    subsets_x = [None] * k
+    subsets_y = [None] * k
 
     # Rearrange the indices of the initial dataset
     np.random.seed(seed)
@@ -123,13 +123,13 @@ def k_fold_random_split(x, y, k, seed=1):
 
     # Populate subsets
     for i in range(k - 1):
-        xsubsets[i] = x[indices[i * rows : i * rows + rows]]
-        ysubsets[i] = y[indices[i * rows : i * rows + rows]]
+        subsets_x[i] = x[indices[i * rows : i * rows + rows]]
+        subsets_y[i] = y[indices[i * rows : i * rows + rows]]
 
-    xsubsets[k - 1] = x[indices[(k - 1) * rows :]]
-    ysubsets[k - 1] = y[indices[(k - 1) * rows :]]
+    subsets_x[k - 1] = x[indices[(k - 1) * rows :]]
+    subsets_y[k - 1] = y[indices[(k - 1) * rows :]]
 
-    return xsubsets, ysubsets
+    return subsets_y, subsets_x
 
 
 def standardize(x):
