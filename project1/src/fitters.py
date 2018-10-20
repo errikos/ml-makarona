@@ -47,10 +47,8 @@ class Fitter(metaclass=abc.ABCMeta):
         # Split data
         train_y, train_x, train_ids, lc_test_y, lc_test_x, lc_test_ids = \
             parsers.split_data_rand(data_y, data_x, data_ids, self.validation_param)
-        # set initial w
-        w_init = np.zeros((train_x.shape[1], ))
         # call train function
-        w, err = f(train_y, train_x, w_init, *args)
+        w, err = f(train_y, train_x, *args)
 
         # Predict labels for local testing data
         lc_pred_y = parsers.predict_labels(w, lc_test_x)
@@ -85,8 +83,9 @@ class GD_fitter(Fitter):
         self.gamma = gamma
 
     def _run(self, data_y, data_x, data_ids):
+        w_init = np.zeros((data_x.shape[1], ))
         f = impl.least_squares_GD
-        args = [self.max_iter, self.gamma]
+        args = [w_init, self.max_iter, self.gamma]
         if self.do_cross_validate:
             self._train_and_cross_validate(data_y, data_x, data_ids, f, *args)
         else:
