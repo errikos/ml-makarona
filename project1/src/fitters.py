@@ -174,3 +174,44 @@ class GDFitter(Fitter):
         pred_y = parsers.predict_labels(w, parsers.build_poly(test_tx, self.degree, True))
 
         loaders.create_csv_submission(test_ids, pred_y, "gd.csv")
+
+
+class RidgeFitter(Fitter):
+    """Fitter implementing ridge regression using least squares."""
+
+    def __init__(self, ratio, lamda, **kwargs):
+        super().__init__(ratio, **kwargs)
+        self.lamda = lamda
+
+    def _run(self, data_y, data_x, data_ids, **hyper):
+        w_init = np.zeros((data_x.shape[1], ))
+        f = impl.ridge_regression
+        args = {
+            **hyper
+        }
+
+        if self.do_cross_validate:
+            trainer = self._train_and_cross_validate
+        else:
+            trainer = self._train_and_validate
+        return trainer(data_y, data_x, data_ids, f, **args)
+
+    @property
+    def hyper_params(self):
+        return {'lamda': self.lamda}
+
+    def _tune_lamda(self):
+        for v in np.logspace(-12,-1, 20):
+            yield v
+    
+    def _make_predictions(self, w):
+        test_path = os.path.join('..', 'data', 'test.csv')
+        _, test_tx, test_ids = loaders.load_csv_data(test_path)
+
+        if self.do_std:
+            test_tx, _, _ = parsers.standardize(test_tx)
+
+        test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
+        pred_y = parsers.predict_labels(w, parsers.build_poly(test_tx, self.degree, True))
+
+        loaders.create_csv_submission(test_ids, pred_y, "ridge.csv")

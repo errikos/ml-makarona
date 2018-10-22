@@ -131,7 +131,9 @@ def k_fold_random_split(y, x, k, seed=1):
 
     return subsets_y, subsets_x
 
-# My version
+# My version: Calculates mean and std PER FEATURE without the -999s
+# Sets all -999 to mean (0)
+# Gets 0.74336 (linear regr)
 # def standardize(x):
 #     """Standardise each feature. Returns mean of last feat."""
 #     for i  in range(x.shape[1]):
@@ -145,14 +147,47 @@ def k_fold_random_split(y, x, k, seed=1):
 #         x[:,i] = feature
 #     return x, mean, std
 
-
+# My version2: Calculates mean and std PER FEATURE without the -999s
+# Sets all -999 to normal or uniform values with 0 mean and 1 std
+# Gets 0.74124 (normal) (linear regr)
+# Gets 0.74122 (uniform) (linear regr)
 def standardize(x):
-    """Standardize the original data set."""
-    mean_x = np.mean(x)
-    x = x - mean_x
-    std_x = np.std(x)
-    x = x / std_x
-    return x, mean_x, std_x
+    """Standardise each feature. Returns mean of last feat."""
+    for i in range(x.shape[1]):
+        feature = x[:,i]
+        invalid = [feature == -999.0]
+        valid   = [feature != -999.0]
+        mean    = np.mean(feature[valid])
+        std     = np.std(feature[valid])
+        feature = (feature-mean)/std
+        feature[invalid] = np.random.normal(0,1,feature[invalid].shape[0])
+        #feature[invalid] = np.random.uniform(-1,1,feature[invalid].shape[0])
+        x[:,i] = feature
+    return x, mean, std
+
+
+# Their version: Calculates mean and std for the whole table with the -999
+# Gets 0.68998 (linear regr)
+# def standardize(x):
+#     """Standardize the original data set."""
+#     mean_x = np.mean(x)
+#     x = x - mean_x
+#     std_x = np.std(x)
+#     x = x / std_x
+#     return x, mean_x, std_x
+
+# Their version: but per feature
+# Gets 0.74334 (linear regr)
+# def standardize(x):
+#     """Standardize the original data set."""
+#     for i in range(x.shape[1]):
+#         feature = x[:,i]
+#         mean_x = np.mean(feature)
+#         feature = feature - mean_x
+#         std_x = np.std(feature)
+#         feature = feature / std_x
+#         x[:,i] = feature
+#     return x, mean_x, std_x
 
 
 def sigmoid(z):

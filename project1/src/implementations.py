@@ -7,7 +7,7 @@ import gradients
 
 from util import parsers
 
-
+# TODO: What is the point of printing just w0 and w1??
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     """Linear regression usign Gradient Descent."""
     w = initial_w
