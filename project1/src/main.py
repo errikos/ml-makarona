@@ -13,7 +13,8 @@ def cli():
 @cli.command(help='Gradient Descent')
 def gd():
 
-    fitter = ft.GDFitter(0.8, 4000, 0.0001, degree=3, do_std = True, do_rm_samples = False)
+    fitter = ft.GDFitter(0.8, 4000, 0.0001, degree=2, do_std = True,
+                         do_tune_hyper=True, do_cross_validate=False)
     data_path = os.path.join("..", "data", "train.csv")
     tmp_y, tmp_tx, tmp_ids = loaders.load_csv_data(data_path)
     fitter.run(tmp_y, tmp_tx, tmp_ids)
@@ -31,7 +32,8 @@ def least():
 
 @cli.command(help='Ridge Regression')
 def ridge():
-    fitter = ft.RidgeFitter(0.8, 0.01, degree=1, do_std = True)
+    fitter = ft.RidgeFitter(0.8, 0.000127427, degree=5, do_std = True, do_tune_hyper=False, 
+                            do_cross_validate=False)
     data_path = os.path.join("..", "data", "train.csv")
     tmp_y, tmp_tx, tmp_ids = loaders.load_csv_data(data_path)
     fitter.run(tmp_y, tmp_tx, tmp_ids)

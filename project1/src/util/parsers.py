@@ -134,36 +134,37 @@ def k_fold_random_split(y, x, k, seed=1):
 # My version: Calculates mean and std PER FEATURE without the -999s
 # Sets all -999 to mean (0)
 # Gets 0.74336 (linear regr)
-# def standardize(x):
-#     """Standardise each feature. Returns mean of last feat."""
-#     for i  in range(x.shape[1]):
-#         feature = x[:,i]
-#         invalid = [feature == -999.0]
-#         valid   = [feature != -999.0]
-#         mean    = np.mean(feature[valid])
-#         std     = np.std(feature[valid])
-#         feature = (feature-mean)/std
-#         feature[invalid] = 0
-#         x[:,i] = feature
-#     return x, mean, std
-
-# My version2: Calculates mean and std PER FEATURE without the -999s
-# Sets all -999 to normal or uniform values with 0 mean and 1 std
-# Gets 0.74124 (normal) (linear regr)
-# Gets 0.74122 (uniform) (linear regr)
 def standardize(x):
     """Standardise each feature. Returns mean of last feat."""
-    for i in range(x.shape[1]):
+    for i  in range(x.shape[1]):
         feature = x[:,i]
         invalid = [feature == -999.0]
         valid   = [feature != -999.0]
         mean    = np.mean(feature[valid])
         std     = np.std(feature[valid])
         feature = (feature-mean)/std
-        feature[invalid] = np.random.normal(0,1,feature[invalid].shape[0])
-        #feature[invalid] = np.random.uniform(-1,1,feature[invalid].shape[0])
+        feature[invalid] = 0
         x[:,i] = feature
     return x, mean, std
+
+# My version2: Calculates mean and std PER FEATURE without the -999s
+# Sets all -999 to normal or uniform values with 0 mean and 1 std
+# Gets 0.74124 (normal) (linear regr)
+# Gets 0.74122 (uniform) (linear regr)
+# def standardize(x):
+#     """Standardise each feature. Returns mean of last feat."""
+#     for i in range(x.shape[1]):
+#         feature = x[:,i]
+#         invalid = [feature == -999.0]
+#         valid   = [feature != -999.0]
+#         mean    = np.mean(feature[valid])
+#         std     = np.std(feature[valid])
+#         feature = (feature-mean)/std
+#         #feature[invalid] = 0
+#         #feature[invalid] = np.random.normal(0,1,feature[invalid].shape[0])
+#         #feature[invalid] = np.random.uniform(-1,1,feature[invalid].shape[0])
+#         x[:,i] = feature
+#     return x, mean, std
 
 
 # Their version: Calculates mean and std for the whole table with the -999

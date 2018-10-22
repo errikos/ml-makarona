@@ -50,17 +50,18 @@ class Fitter(metaclass=abc.ABCMeta):
         data_x = parsers.build_poly(data_x, self.degree, True)
         self.mean, self.std = mean, std
 
-        w_err_pairs = []  # (w, err) pairs accumulator
+        w_err_hyper_tuples = []  # (w, err) pairs accumulator
         for hyper_params in self._obtain_hyper_params():
             print('Running with hyper parameters:', end=' ')
             print_dict(hyper_params)
-            w_err_pairs.append(self._run(data_y, data_x, data_ids, **hyper_params))
+            w_err_hyper_tuples.append((self._run(data_y, data_x, data_ids, **hyper_params),
+                                        hyper_params))
         
         # Find w that corresponds to minimum error and predict based on that
-        w, err = min(w_err_pairs, key=lambda x: x[1])
+        w_err, par = min(w_err_hyper_tuples, key=lambda x: x[0][1])
 
-        print('Found optimal w with error={err}'.format(err=err))
-        self._make_predictions(w)
+        print('Found optimal w with error={err} and parameters={par}'.format(err=w_err[1],par=par))
+        self._make_predictions(w_err[0])
 
     @property
     def hyper_params(self):
@@ -200,7 +201,7 @@ class RidgeFitter(Fitter):
     def hyper_params(self):
         return {'lambda_': self.lambda_}
 
-    def _tune_lamda(self):
+    def _tune_lambda_(self):
         for v in np.logspace(-12,-1, 20):
             yield v
     
