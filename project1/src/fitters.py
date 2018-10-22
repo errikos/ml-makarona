@@ -179,9 +179,9 @@ class GDFitter(Fitter):
 class RidgeFitter(Fitter):
     """Fitter implementing ridge regression using least squares."""
 
-    def __init__(self, ratio, lamda, **kwargs):
+    def __init__(self, ratio, lambda_, **kwargs):
         super().__init__(ratio, **kwargs)
-        self.lamda = lamda
+        self.lambda_ = lambda_
 
     def _run(self, data_y, data_x, data_ids, **hyper):
         w_init = np.zeros((data_x.shape[1], ))
@@ -198,7 +198,7 @@ class RidgeFitter(Fitter):
 
     @property
     def hyper_params(self):
-        return {'lamda': self.lamda}
+        return {'lambda_': self.lambda_}
 
     def _tune_lamda(self):
         for v in np.logspace(-12,-1, 20):
