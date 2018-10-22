@@ -5,6 +5,8 @@ import numpy as np
 import costs
 import gradients
 
+from util import parsers
+
 
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     """Linear regression usign Gradient Descent."""
@@ -48,7 +50,15 @@ def least_squares(y, tx):
 
 def ridge_regression(y, tx, lambda_):
     """Ridge regression using normal equations."""
-    pass
+    N, D = tx.shape
+    lambda_ = 2 * N * lambda_
+
+    a = tx.T.dot(tx) + lambda_ * np.eye(D)
+    b = tx.T.dot(y)
+
+    w = np.linalg.solve(a, b)
+    loss = costs.compute_mse(y, tx, w)
+    return w, loss
 
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
