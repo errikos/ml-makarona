@@ -10,8 +10,20 @@ from util import loaders, parsers, testers
 import costs
 
 
-class Fitter(metaclass=abc.ABCMeta):
+def print_dict(d, delim='='):
+    for k, v in d.items():
+        print('{k}{d}{v}'.format(k=k, d=delim, v=v), end=' ')
+    print()
 
+
+class Fitter(metaclass=abc.ABCMeta):
+    """Base class for Fitter objects.
+
+    Each fitter encapsulates a fitter behaviour and provides a nice interface
+    for settings parameters, tuning hyper-parameters, etc.
+
+    The core method implementations are located in implementations.py.
+    """
     def __init__(self, validation_param, degree=1, do_std=True, do_rm_samples=False,
                  do_rm_features=False, do_tune_hyper=False, do_cross_validate=False):
         self.validation_param = validation_param
@@ -22,12 +34,9 @@ class Fitter(metaclass=abc.ABCMeta):
         self.do_tune_hyper = do_tune_hyper
         self.do_cross_validate = do_cross_validate
 
-    def _run(self, data_y, data_x, data_ids):
+    def _run(self, data_y, data_x, data_ids, *hyper):
         raise NotImplementedError
 
-    def _run_hyper(self, data_y, data_x, data_ids):
-        raise NotImplementedError
-        
     def run(self, data_y, data_x, data_ids):
         if self.do_rm_features:
             data_x = parsers.cut_features(data_x)
@@ -41,19 +50,38 @@ class Fitter(metaclass=abc.ABCMeta):
         data_x = parsers.build_poly(data_x, self.degree, True)
         self.mean, self.std = mean, std
 
-        if self.do_tune_hyper:
-            self._run_hyper(data_y, data_x, data_ids)
-        else:
-            self._run(data_y, data_x, data_ids)
+        w_err_pairs = []  # (w, err) pairs accumulator
+        for hyper_params in self._obtain_hyper_params():
+            print('Running with hyper parameters:', end=' ')
+            print_dict(hyper_params)
+            w_err_pairs.append(self._run(data_y, data_x, data_ids, **hyper_params))
+        
+        # Find w that corresponds to minimum error and predict based on that
+        w, err = min(w_err_pairs, key=lambda x: x[1])
 
-    def _train_and_validate(self, data_y, data_x, data_ids, f, *args, ratio=0.7):
+        print('Found optimal w with error={err}'.format(err=err))
+        self._make_predictions(w)
+
+    @property
+    def hyper_params(self):
+        raise NotImplementedError
+
+    def _obtain_hyper_params(self):
+        if self.do_tune_hyper:
+            hyper_providers = {hp: getattr(self, '_tune_{h}'.format(h=hp))()
+                               for hp in self.hyper_params.keys()}
+            for hyper_values in itertools.product(*hyper_providers.values()):
+                yield dict(zip(hyper_providers.keys(), hyper_values))
+        else:
+            yield self.hyper_params
+
+    def _train_and_validate(self, data_y, data_x, data_ids, f, **args):
+        ratio = self.validation_param
+
         # Split data
-        # train_y, train_x, train_ids, lc_test_y, lc_test_x, lc_test_ids = \
-        #     parsers.split_data_rand(data_y, data_x, data_ids, self.validation_param)
-        train_y, train_x, lc_test_y, lc_test_x = parsers.split_data_rand(data_y, data_x,
-                                                                         self.validation_param)
+        train_y, train_x, lc_test_y, lc_test_x = parsers.split_data_rand(data_y, data_x, ratio)
         # call train function
-        w, err = f(train_y, train_x, *args)
+        w, err = f(train_y, train_x, **args)
 
         # TODO: Check if test error is correct and return it
         test_error = costs.compute_mse(lc_test_y, lc_test_x, w)
@@ -67,9 +95,10 @@ class Fitter(metaclass=abc.ABCMeta):
 
         return w, test_error
 
-    def _train_and_cross_validate(self, data_y, data_x, data_ids, f, *args, k=4):
+    def _train_and_cross_validate(self, data_y, data_x, data_ids, f, **args):
+        k = self.validation_param
         # Create k subsets of the dataset
-        subsets_y, subsets_x = parsers.k_fold_random_split(data_y, data_x, k, seed=1)
+        subsets_y, subsets_x = parsers.k_fold_random_split(data_y, data_x, k)
 
         # Train and validate k times, each time picking subset i as the test set
         avg_test_error = 0
@@ -81,7 +110,7 @@ class Fitter(metaclass=abc.ABCMeta):
             train_y = np.concatenate([subsets_y[j] for j in range(k) if j != i], 0)
 
             # call train function
-            w, err = f(train_y, train_x, *args)
+            w, err = f(train_y, train_x, **args)
 
             # TODO Return average test error
             # Calculate test error, with subset i as test set
@@ -111,18 +140,24 @@ class GDFitter(Fitter):
         self.max_iter = max_iter
         self.gamma = gamma
 
-    def _run(self, data_y, data_x, data_ids):
+    def _run(self, data_y, data_x, data_ids, **hyper):
         w_init = np.zeros((data_x.shape[1], ))
         f = impl.least_squares_GD
-        args = [w_init, self.max_iter, self.gamma]
-        if self.do_cross_validate:
-            self._train_and_cross_validate(data_y, data_x, data_ids, f, *args)
-        else:
-            self._train_and_validate(data_y, data_x, data_ids, f, *args)
+        args = {
+            'initial_w': w_init,
+            'max_iters': self.max_iter,
+            **hyper
+        }
 
-    def _run_hyper(self, data_y, data_x, data_ids):
-        print("METHOD NOT SUPPORTED YET")
-        raise NotImplementedError
+        if self.do_cross_validate:
+            trainer = self._train_and_cross_validate
+        else:
+            trainer = self._train_and_validate
+        return trainer(data_y, data_x, data_ids, f, **args)
+
+    @property
+    def hyper_params(self):
+        return {'gamma': self.gamma}
 
     def _tune_gamma(self):
         for v in range(1, 20):
