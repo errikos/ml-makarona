@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import abc
 import numpy as np
+import itertools
 import os
 
 import implementations as impl
@@ -38,7 +39,7 @@ class Fitter(metaclass=abc.ABCMeta):
         # TODO Move build_poly inside train and validate(?)
         # Build polynomial
         data_x = parsers.build_poly(data_x, self.degree, True)
-        # self.mean, self.std = mean, std
+        self.mean, self.std = mean, std
 
         if self.do_tune_hyper:
             self._run_hyper(data_y, data_x, data_ids)
@@ -66,19 +67,15 @@ class Fitter(metaclass=abc.ABCMeta):
 
         return w, test_error
 
-    def _make_predictions(self, w):
-        raise NotImplementedError
-
     def _train_and_cross_validate(self, data_y, data_x, data_ids, f, *args, k=4):
-    
         # Create k subsets of the dataset
         subsets_y, subsets_x = parsers.k_fold_random_split(data_y, data_x, k, seed=1)
 
         # Train and validate k times, each time picking subset i as the test set
-        averageTestError = 0
-        averageAccuracy = 0
-        for i in range(k):
+        avg_test_error = 0
+        avg_accuracy = 0
 
+        for i in range(k):
             # Concatenate k-1 subsets 
             train_x = np.concatenate([subsets_x[j] for j in range(k) if j != i], 0)
             train_y = np.concatenate([subsets_y[j] for j in range(k) if j != i], 0)
@@ -88,20 +85,22 @@ class Fitter(metaclass=abc.ABCMeta):
 
             # TODO Return average test error
             # Calculate test error, with subset i as test set
-            averageTestError += costs.compute_mse(subsets_y[i], subsets_x[i], w)
+            avg_test_error += costs.compute_mse(subsets_y[i], subsets_x[i], w)
 
             # Predict labels for local testing data
             lc_pred_y = parsers.predict_labels(w, subsets_x[i])
 
             matches = np.sum(subsets_y[i] == lc_pred_y)
-            averageAccuracy += matches / subsets_y[i].shape[0]
+            avg_accuracy += matches / subsets_y[i].shape[0]
 
-        averageTestError /= k
-        averageAccuracy /= k
+        avg_test_error /= k
+        avg_accuracy /= k
+        print("Average accuracy:", avg_accuracy)
 
-        print("averageAccuracy: " + str(averageAccuracy))
+        return w, avg_test_error
 
-        return w, averageTestError
+    def _make_predictions(self, w):
+        raise NotImplementedError
 
 
 class GDFitter(Fitter):
