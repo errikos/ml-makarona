@@ -281,7 +281,18 @@ class RegLogisticFitter(LogisticFitter):
         self.lambda_ = lambda_
 
     def _run(self, data_y, data_x, data_ids, **hyper):
-        pass
+        N, D = data_x.shape
+        # add constant term to input samples
+        data_x = np.concatenate((np.ones((N, 1)), data_x), axis=1)
+
+        f = impl.reg_logistic_regression
+        args = {
+            'initial_w': np.zeros((D + 1, )),
+            'max_iters': self.max_iters,
+            **hyper,
+        }
+
+        return self._trainer(data_y, data_x, data_ids, f, **args)
 
     @property
     def hyper_params(self):
