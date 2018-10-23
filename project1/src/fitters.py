@@ -77,6 +77,13 @@ class Fitter(metaclass=abc.ABCMeta):
         else:
             yield self.hyper_params
 
+    @property
+    def _trainer(self):
+        if self.do_cross_validate:
+            return self._train_and_cross_validate
+        else:
+            return self._train_and_validate
+
     def _train_and_validate(self, data_y, data_x, data_ids, f, **args):
         ratio = self.validation_param
 
@@ -151,11 +158,7 @@ class GDFitter(Fitter):
             **hyper
         }
 
-        if self.do_cross_validate:
-            trainer = self._train_and_cross_validate
-        else:
-            trainer = self._train_and_validate
-        return trainer(data_y, data_x, data_ids, f, **args)
+        return self._trainer(data_y, data_x, data_ids, f, **args)
 
     @property
     def hyper_params(self):
@@ -189,11 +192,7 @@ class SGDFitter(GDFitter):
             **hyper
         }
 
-        if self.do_cross_validate:
-            trainer = self._train_and_cross_validate
-        else:
-            trainer = self._train_and_validate
-        return trainer(data_y, data_x, data_ids, f, **args)
+        return self._trainer(data_y, data_x, data_ids, f, **args)
 
 
 class RidgeFitter(Fitter):
@@ -209,11 +208,7 @@ class RidgeFitter(Fitter):
             **hyper
         }
 
-        if self.do_cross_validate:
-            trainer = self._train_and_cross_validate
-        else:
-            trainer = self._train_and_validate
-        return trainer(data_y, data_x, data_ids, f, **args)
+        return self._trainer(data_y, data_x, data_ids, f, **args)
 
     @property
     def hyper_params(self):
@@ -244,7 +239,18 @@ class LogisticFitter(Fitter):
         self.gamma = gamma
 
     def _run(self, data_y, data_x, data_ids, **hyper):
-        pass
+        N, D = data_x.shape
+        # add constant term to input samples
+        data_x = np.concatenate((np.ones((N, 1)), data_x), axis=1)
+
+        f = impl.logistic_regression
+        args = {
+            'initial_w': np.zeros((D + 1, )),
+            'max_iters': self.max_iters,
+            **hyper,
+        }
+
+        return self._trainer(data_y, data_x, data_ids, f, **args)
 
     @property
     def hyper_params(self):
