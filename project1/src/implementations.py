@@ -63,8 +63,8 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     w = initial_w
 
     for n_iter in range(max_iters):
-        delta = np.linalg.inv(gradients.hessian(w, tx))
-        w = w - gamma * delta.dot(gradients.log_likelihood_gradient(y, tx, w))
+        grad = gradients.log_likelihood_gradient(y, tx, w)  # compute log-likelihood gradient
+        w = w - gamma * np.linalg.inv(gradients.hessian(w, tx)).dot(grad)  # compute new w
         loss = costs.compute_log_likelihood_error(y, tx, w)
         print("LOG({bi}/{ti}): loss={l}".format(bi=n_iter, ti=max_iters-1, l=loss))
     
