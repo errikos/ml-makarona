@@ -34,3 +34,8 @@ def compute_mae(y, tx, w):
     """Compute the loss by MAE (Mean Absolute Error)."""
     e = y - tx.dot(w)
     return mae(e)
+
+
+def compute_log_likelihood_error(y, tx, w):
+    """Compute the loss of the log-likelihood cost function."""
+    return 0.0

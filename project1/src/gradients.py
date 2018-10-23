@@ -13,3 +13,8 @@ def hessian(w, tx):
         return s * (1 - s)
     S = np.diag(np.array([diag_form(sample) for sample in tx]))
     return tx.T.dot(S).dot(tx)
+
+
+def log_likelihood_gradient(y, tx, w):
+    diff = sigmoid(tx.dot(w)) - y
+    return tx.T.dot(diff)
