@@ -1,7 +1,7 @@
 import numpy as np
 from costs import sigmoid
 
-def compute_gradient(y, tx, w):
+def mse_gradient(y, tx, w):
     err = y - tx.dot(w)
     grad = -tx.T.dot(err) / len(err)
     return grad, err

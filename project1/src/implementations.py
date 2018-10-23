@@ -12,7 +12,7 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     w = initial_w
     for n_iter in range(max_iters):
         # compute loss, gradient
-        grad, err = gradients.compute_gradient(y, tx, w)
+        grad, err = gradients.mse_gradient(y, tx, w)
         loss = costs.mse(err)
         # gradient w by descent update
         w = w - gamma * grad
@@ -27,7 +27,7 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
         for y_batch, tx_batch in parsers.batch_iter(
                 y, tx, batch_size=1, num_batches=1):
             # compute a stochastic gradient and loss
-            grad, err = gradients.compute_gradient(y_batch, tx_batch, w)
+            grad, err = gradients.mse_gradient(y_batch, tx_batch, w)
             loss = costs.mse(err)
             # update w through the stochastic gradient update
             w = w - gamma * grad
