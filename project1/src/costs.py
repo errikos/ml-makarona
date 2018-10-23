@@ -13,6 +13,11 @@ def mae(e):
     return np.mean(np.abs(e))
 
 
+def sigmoid(z):
+    z = np.clip(z, -1000, 1000)
+    return 1 / (1 + np.exp(-z))
+
+
 def compute_mse(y, tx, w):
     """Compute the loss by MSE (Mean Square Error)."""
     e = y - tx.dot(w)
