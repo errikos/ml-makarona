@@ -58,10 +58,11 @@ class Fitter(metaclass=abc.ABCMeta):
                                         hyper_params))
         
         # Find w that corresponds to minimum error and predict based on that
-        w_err, par = min(w_err_hyper_tuples, key=lambda x: x[0][1])
+        (w, err), hyper_params = min(w_err_hyper_tuples, key=lambda x: x[0][1])
+        print('Found optimal w with error={err} and hyper parameters:'.format(err=err))
+        print_dict(hyper_params)
 
-        print('Found optimal w with error={err} and parameters={par}'.format(err=w_err[1],par=par))
-        self._make_predictions(w_err[0])
+        self._make_predictions(w)
 
     @property
     def hyper_params(self):
@@ -136,9 +137,9 @@ class Fitter(metaclass=abc.ABCMeta):
 class GDFitter(Fitter):
     """Fitter implementing linear regression using gradient descent."""
 
-    def __init__(self, ratio, max_iter, gamma, **kwargs):
-        super().__init__(ratio, **kwargs)
-        self.max_iter = max_iter
+    def __init__(self, validation_param, max_iters, gamma, **kwargs):
+        super().__init__(validation_param, **kwargs)
+        self.max_iters = max_iters
         self.gamma = gamma
 
     def _run(self, data_y, data_x, data_ids, **hyper):
@@ -146,7 +147,7 @@ class GDFitter(Fitter):
         f = impl.least_squares_GD
         args = {
             'initial_w': w_init,
-            'max_iters': self.max_iter,
+            'max_iters': self.max_iters,
             **hyper
         }
 
@@ -177,15 +178,32 @@ class GDFitter(Fitter):
         loaders.create_csv_submission(test_ids, pred_y, "gd.csv")
 
 
-class RidgeFitter(Fitter):
-    """Fitter implementing ridge regression using least squares."""
-
-    def __init__(self, ratio, lambda_, **kwargs):
-        super().__init__(ratio, **kwargs)
-        self.lambda_ = lambda_
+class SGDFitter(GDFitter):
 
     def _run(self, data_y, data_x, data_ids, **hyper):
         w_init = np.zeros((data_x.shape[1], ))
+        f = impl.least_squares_SGD
+        args = {
+            'initial_w': w_init,
+            'max_iters': self.max_iters,
+            **hyper
+        }
+
+        if self.do_cross_validate:
+            trainer = self._train_and_cross_validate
+        else:
+            trainer = self._train_and_validate
+        return trainer(data_y, data_x, data_ids, f, **args)
+
+
+class RidgeFitter(Fitter):
+    """Fitter implementing ridge regression using least squares."""
+
+    def __init__(self, validation_param, lambda_, **kwargs):
+        super().__init__(validation_param, **kwargs)
+        self.lambda_ = lambda_
+
+    def _run(self, data_y, data_x, data_ids, **hyper):
         f = impl.ridge_regression
         args = {
             **hyper
@@ -202,7 +220,7 @@ class RidgeFitter(Fitter):
         return {'lambda_': self.lambda_}
 
     def _tune_lambda_(self):
-        for v in np.logspace(-12,-1, 20):
+        for v in np.logspace(-12, -1, 20):
             yield v
     
     def _make_predictions(self, w):
@@ -216,3 +234,56 @@ class RidgeFitter(Fitter):
         pred_y = parsers.predict_labels(w, parsers.build_poly(test_tx, self.degree, True))
 
         loaders.create_csv_submission(test_ids, pred_y, "ridge.csv")
+
+
+class LogisticFitter(Fitter):
+
+    def __init__(self, validation_param, max_iters, gamma, **kwargs):
+        super().__init__(validation_param, **kwargs)
+        self.max_iters = max_iters
+        self.gamma = gamma
+
+    def _run(self, data_y, data_x, data_ids, **hyper):
+        pass
+
+    @property
+    def hyper_params(self):
+        return {'gamma': self.gamma}
+    
+    def _tune_gamma(self):
+        for v in range(1, 20):
+            yield v / 10
+
+    def _make_predictions(self, w):
+        test_path = os.path.join('..', 'data', 'test.csv')
+        _, test_tx, test_ids = loaders.load_csv_data(test_path)
+
+        if self.do_std:
+            test_tx, _, _ = parsers.standardize(test_tx)
+
+        test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
+        pred_y = parsers.predict_labels(w, parsers.build_poly(test_tx, self.degree, True),
+                                        is_logistic=True)
+
+        loaders.create_csv_submission(test_ids, pred_y, "logistic.csv")
+
+
+class RegLogisticFitter(LogisticFitter):
+
+    def __init__(self, validation_param, max_iters, gamma, lambda_, **kwargs):
+        super().__init__(validation_param, max_iters, gamma, **kwargs)
+        self.lambda_ = lambda_
+
+    def _run(self, data_y, data_x, data_ids, **hyper):
+        pass
+
+    @property
+    def hyper_params(self):
+        return {
+            'lambda_': self.lambda_,
+            **super().hyper_params,
+        }
+
+    def _tune_lambda_(self):
+        for v in np.logspace(-12, -1, 20):
+            yield v
