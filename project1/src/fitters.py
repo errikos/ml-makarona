@@ -11,10 +11,10 @@ import costs
 
 
 def print_dict(d, delim='='):
+    if not d:
+        print('(none)', end='')
     for k, v in d.items():
         print('{k}{d}{v}'.format(k=k, d=delim, v=v), end=' ')
-    else:
-        print('(none)', end='')
 
 
 class Fitter(metaclass=abc.ABCMeta):
