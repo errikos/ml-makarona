@@ -5,49 +5,104 @@ from util import loaders
 import os
 
 
+DEFAULT_DATA_PATH = os.path.join('..', 'data')
+
+
+def _res_validation_param(param, do_cross_validation):
+    if not param:
+        return param
+    if do_cross_validation:
+        param = int(param)
+        return param if 1 < param else None
+    else:
+        param = float(param)
+        return param if 0.0 < param <= 1.0 else None
+
+
+def _load_data(data_path):
+    train_y, train_tx, train_ids = loaders.load_csv_data(os.path.join(data_path, 'train.csv'))
+    _, test_tx, test_ids = loaders.load_csv_data(os.path.join(data_path, 'test.csv'))
+    return train_y, train_tx, train_ids, test_tx, test_ids
+
+
 @click.group()
-def cli():
-    pass
+@click.option('--std', is_flag=True,
+              help='Standardize data.')
+@click.option('--tune', is_flag=True,
+              help='Tune hyper parameters.')
+@click.option('--cross', is_flag=True,
+              help='Do cross validation.')
+@click.option('--rm-samples', is_flag=True,
+              help='Remove samples having at least one -999 value.')
+@click.option('--rm-features', is_flag=True,
+              help='Remove features having at least one -999 value.')
+@click.option('--data-path', metavar='PATH',
+              help='Directory containing train.csv and test.csv.')
+@click.option('--validate', metavar='RATIO_OR_K', default=0.9,
+              help='Validation method parameter (split ratio or k for k-fold cross validation).')
+@click.option('--degree', metavar='DEGREE', type=int, default=1,
+              help='Polynomial degree for enhanced feature fectors.')
+@click.pass_context
+def cli(ctx, **kwargs):
+    ctx.ensure_object(dict)
+    ctx.obj.update(**kwargs)
+    # resolve data path
+    ctx.obj.update(data_path=kwargs['data_path'] or DEFAULT_DATA_PATH)
+    # ensure proper validation parameter
+    ctx.obj.update(validation_param=_res_validation_param(kwargs['validate'], kwargs['cross']))
 
 
 @cli.command(help='Gradient Descent')
-def gd():
-
-    fitter = ft.GDFitter(0.8, 4000, 0.0001, degree=2, do_std = True,
-                         do_tune_hyper=True, do_cross_validate=False)
-    data_path = os.path.join("..", "data", "train.csv")
-    tmp_y, tmp_tx, tmp_ids = loaders.load_csv_data(data_path)
-    fitter.run(tmp_y, tmp_tx, tmp_ids)
+@click.argument('max_iters', type=int)
+@click.argument('gamma', type=float)
+@click.pass_context
+def gd(ctx, max_iters, gamma):
+    fitter = ft.GDFitter(max_iters, gamma, **ctx.obj)  # create fitter object
+    fitter.run(*_load_data(ctx.obj['data_path']))  # load data and run
 
 
 @cli.command(help='Stochastic Gradient Descent')
-def sgd():
-    pass
+@click.argument('max_iters', type=int)
+@click.argument('gamma', type=float)
+@click.pass_context
+def sgd(ctx, max_iters, gamma):
+    fitter = ft.SGDFitter(max_iters, gamma, **ctx.obj)  # create fitter object
+    fitter.run(*_load_data(ctx.obj['data_path']))  # load data and run
 
 
 @cli.command(help='Least Squares')
-def least():
-    pass
+@click.pass_context
+def least(ctx):
+    fitter = ft.LeastFitter(**ctx.obj)  # create fitter object
+    fitter.run(*_load_data(ctx.obj['data_path']))  # load data and run
 
 
 @cli.command(help='Ridge Regression')
-def ridge():
-    fitter = ft.RidgeFitter(0.8, 0.000127427, degree=5, do_std = True, do_tune_hyper=False, 
-                            do_cross_validate=False)
-    data_path = os.path.join("..", "data", "train.csv")
-    tmp_y, tmp_tx, tmp_ids = loaders.load_csv_data(data_path)
-    fitter.run(tmp_y, tmp_tx, tmp_ids)
+@click.argument('lambda_', type=float, metavar='LAMBDA')
+@click.pass_context
+def ridge(ctx, lambda_):
+    fitter = ft.RidgeFitter(lambda_, **ctx.obj)  # create fitter object
+    fitter.run(*_load_data(ctx.obj['data_path']))  # load data and run
 
 
 @cli.command(help='Logistic Regression')
-def log():
-    pass
+@click.argument('max_iters', type=int)
+@click.argument('gamma', type=float)
+@click.pass_context
+def log(ctx, max_iters, gamma):
+    fitter = ft.LogisticFitter(max_iters, gamma, **ctx.obj)  # create fitter object
+    fitter.run(*_load_data(ctx.obj['data_path']))  # load data and run
 
 
 @cli.command(help='Regularised Logistic Regression')
-def reglog():
-    pass
+@click.argument('max_iters', type=int)
+@click.argument('gamma', type=float)
+@click.argument('lambda_', type=float, metavar='LAMBDA')
+@click.pass_context
+def reglog(ctx, max_iters, gamma, lambda_):
+    fitter = ft.LogisticFitter(max_iters, gamma, lambda_, **ctx.obj)  # create fitter object
+    fitter.run(*_load_data(ctx.obj['data_path']))  # load data and run
 
 
 if __name__ == '__main__':
-    cli()
+    cli(obj={})
