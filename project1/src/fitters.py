@@ -25,7 +25,7 @@ class Fitter(metaclass=abc.ABCMeta):
     The core method implementations are located in implementations.py.
     """
     def __init__(self, validation_param, degree=1, do_std=True, do_rm_samples=False,
-                 do_rm_features=False, do_tune_hyper=False, do_cross_validate=False):
+                 do_rm_features=False, do_tune_hyper=False, do_cross_validate=False, **kwargs):
         self.validation_param = validation_param
         self.degree = degree
         self.do_std = do_std
@@ -37,7 +37,7 @@ class Fitter(metaclass=abc.ABCMeta):
     def _run(self, data_y, data_x, data_ids, *hyper):
         raise NotImplementedError
 
-    def run(self, data_y, data_x, data_ids):
+    def run(self, data_y, data_x, data_ids, test_x, test_ids):
         if self.do_rm_features:
             data_x = parsers.cut_features(data_x)
         if self.do_rm_samples:
@@ -62,11 +62,11 @@ class Fitter(metaclass=abc.ABCMeta):
         print('Found optimal w with error={err} and hyper parameters:'.format(err=err))
         print_dict(hyper_params)
 
-        self._make_predictions(w)
+        self._make_predictions(w, test_x, test_ids)
 
     @property
     def hyper_params(self):
-        raise NotImplementedError
+        return {}
 
     def _obtain_hyper_params(self):
         if self.do_tune_hyper:
@@ -137,15 +137,15 @@ class Fitter(metaclass=abc.ABCMeta):
 
         return w, avg_test_error
 
-    def _make_predictions(self, w):
+    def _make_predictions(self, w, test_x, test_ids):
         raise NotImplementedError
 
 
 class GDFitter(Fitter):
     """Fitter implementing linear regression using gradient descent."""
 
-    def __init__(self, validation_param, max_iters, gamma, **kwargs):
-        super().__init__(validation_param, **kwargs)
+    def __init__(self, max_iters, gamma, **kwargs):
+        super().__init__(**kwargs)
         self.max_iters = max_iters
         self.gamma = gamma
 
@@ -168,10 +168,7 @@ class GDFitter(Fitter):
         for v in range(1, 20):
             yield v / 10
     
-    def _make_predictions(self, w):
-        test_path = os.path.join('..', 'data', 'test.csv')
-        _, test_tx, test_ids = loaders.load_csv_data(test_path)
-
+    def _make_predictions(self, w, test_tx, test_ids):
         if self.do_std:
             test_tx, _, _ = parsers.standardize(test_tx)
 
@@ -182,6 +179,7 @@ class GDFitter(Fitter):
 
 
 class SGDFitter(GDFitter):
+    """Fitter implementing linear regression using stochastic gradient descent."""
 
     def _run(self, data_y, data_x, data_ids, **hyper):
         w_init = np.zeros((data_x.shape[1], ))
@@ -195,11 +193,35 @@ class SGDFitter(GDFitter):
         return self._trainer(data_y, data_x, data_ids, f, **args)
 
 
+class LeastFitter(Fitter):
+    """Fitter implementing least squares using normal equations."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _run(self, data_y, data_x, data_ids, **hyper):
+        f = impl.least_squares
+        args = {
+            **hyper
+        }
+
+        return self._trainer(data_y, data_x, data_ids, f, **args)
+
+    def _make_predictions(self, w, test_tx, test_ids):
+        if self.do_std:
+            test_tx, _, _ = parsers.standardize(test_tx)
+
+        test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
+        pred_y = parsers.predict_labels(w, parsers.build_poly(test_tx, self.degree, True))
+
+        loaders.create_csv_submission(test_ids, pred_y, "least.csv")
+
+
 class RidgeFitter(Fitter):
     """Fitter implementing ridge regression using least squares."""
 
-    def __init__(self, validation_param, lambda_, **kwargs):
-        super().__init__(validation_param, **kwargs)
+    def __init__(self, lambda_, **kwargs):
+        super().__init__(**kwargs)
         self.lambda_ = lambda_
 
     def _run(self, data_y, data_x, data_ids, **hyper):
@@ -218,10 +240,7 @@ class RidgeFitter(Fitter):
         for v in np.logspace(-12, -1, 20):
             yield v
     
-    def _make_predictions(self, w):
-        test_path = os.path.join('..', 'data', 'test.csv')
-        _, test_tx, test_ids = loaders.load_csv_data(test_path)
-
+    def _make_predictions(self, w, test_tx, test_ids):
         if self.do_std:
             test_tx, _, _ = parsers.standardize(test_tx)
 
@@ -232,9 +251,10 @@ class RidgeFitter(Fitter):
 
 
 class LogisticFitter(Fitter):
+    """Fitter implementing logistic regression using Newton's method."""
 
-    def __init__(self, validation_param, max_iters, gamma, **kwargs):
-        super().__init__(validation_param, **kwargs)
+    def __init__(self, max_iters, gamma, **kwargs):
+        super().__init__(**kwargs)
         self.max_iters = max_iters
         self.gamma = gamma
 
@@ -260,10 +280,7 @@ class LogisticFitter(Fitter):
         for v in range(1, 20):
             yield v / 10
 
-    def _make_predictions(self, w):
-        test_path = os.path.join('..', 'data', 'test.csv')
-        _, test_tx, test_ids = loaders.load_csv_data(test_path)
-
+    def _make_predictions(self, w, test_tx, test_ids):
         if self.do_std:
             test_tx, _, _ = parsers.standardize(test_tx)
 
@@ -275,9 +292,10 @@ class LogisticFitter(Fitter):
 
 
 class RegLogisticFitter(LogisticFitter):
+    """Fitter implementing regularised logistic regression using Newton's method."""
 
-    def __init__(self, validation_param, max_iters, gamma, lambda_, **kwargs):
-        super().__init__(validation_param, max_iters, gamma, **kwargs)
+    def __init__(self, max_iters, gamma, lambda_, **kwargs):
+        super().__init__(max_iters, gamma, **kwargs)
         self.lambda_ = lambda_
 
     def _run(self, data_y, data_x, data_ids, **hyper):
