@@ -13,7 +13,8 @@ import costs
 def print_dict(d, delim='='):
     for k, v in d.items():
         print('{k}{d}{v}'.format(k=k, d=delim, v=v), end=' ')
-    print()
+    else:
+        print('(none)', end='')
 
 
 class Fitter(metaclass=abc.ABCMeta):
@@ -59,8 +60,9 @@ class Fitter(metaclass=abc.ABCMeta):
         
         # Find w that corresponds to minimum error and predict based on that
         (w, err), hyper_params = min(w_err_hyper_tuples, key=lambda x: x[0][1])
-        print('Found optimal w with error={err} and hyper parameters:'.format(err=err))
+        print('Found optimal w with error={err} and hyper parameters:'.format(err=err), end=' ')
         print_dict(hyper_params)
+        print()
 
         self._make_predictions(w, test_x, test_ids)
 

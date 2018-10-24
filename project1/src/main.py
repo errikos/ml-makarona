@@ -38,10 +38,10 @@ def _load_data(data_path):
               help='Remove features having at least one -999 value.')
 @click.option('--data-path', metavar='PATH',
               help='Directory containing train.csv and test.csv.')
-@click.option('--validate', metavar='RATIO_OR_K', default=0.9,
+@click.option('--validate', metavar='RATIO_OR_K',
               help='Validation method parameter (split ratio or k for k-fold cross validation).')
 @click.option('--degree', metavar='DEGREE', type=int, default=1,
-              help='Polynomial degree for enhanced feature fectors.')
+              help='Polynomial degree for enhanced feature vectors.')
 @click.pass_context
 def cli(ctx, **kwargs):
     ctx.ensure_object(dict)
@@ -50,6 +50,8 @@ def cli(ctx, **kwargs):
     ctx.obj.update(data_path=kwargs['data_path'] or DEFAULT_DATA_PATH)
     # ensure proper validation parameter
     ctx.obj.update(validation_param=_res_validation_param(kwargs['validate'], kwargs['cross']))
+    if not ctx.obj['validation_param']:
+        raise click.ClickException('missing or invalid value for validation parameter (ratio or k)')
 
 
 @cli.command(help='Gradient Descent')
