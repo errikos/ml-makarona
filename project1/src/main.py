@@ -25,6 +25,17 @@ def _load_data(data_path):
     return train_y, train_tx, train_ids, test_tx, test_ids
 
 
+"""
+The command line interface options are shared among the various methods and must be provided
+before the method is specified. Afterwards, the method arguments must be specified in order.
+
+Some execution examples:
+    $ python main.py --validate 0.8 gd 4000 0.001
+    $ python main.py --cross --validate 4 gd 4000 0.001
+    $ python main.py --validate 0.9 --degree 5 gd 4000 0.001
+    $ python main.py --validate 0.9 --degree 5 reglog 4000 0.001 0.05
+"""
+
 @click.group()
 @click.option('--std', is_flag=True,
               help='Standardize data.')
