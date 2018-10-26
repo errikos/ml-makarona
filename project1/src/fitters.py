@@ -97,7 +97,7 @@ class Fitter(metaclass=abc.ABCMeta):
         else:
             return self._train_and_validate
 
-    def _train_and_validate(self, data_y, data_x, data_ids, train_f,
+    def _train_and_validate(self, data_y, data_x, data_ids, train_f, cost_f,
                             is_logistic=False, **train_args):
         ratio = self.validation_param
 
@@ -107,7 +107,7 @@ class Fitter(metaclass=abc.ABCMeta):
         w, err = train_f(train_y, train_x, **train_args)
 
         # TODO: Check if test error is correct and return it
-        test_error = costs.compute_mse(lc_test_y, lc_test_x, w)
+        test_error = cost_f(lc_test_y, lc_test_x, w)
 
         # Predict labels for local testing data
         lc_pred_y = parsers.predict_labels(w, lc_test_x, is_logistic=is_logistic)
@@ -118,7 +118,7 @@ class Fitter(metaclass=abc.ABCMeta):
 
         return w, test_error, accuracy
 
-    def _train_and_cross_validate(self, data_y, data_x, data_ids, train_f,
+    def _train_and_cross_validate(self, data_y, data_x, data_ids, train_f, cost_f,
                                   is_logistic=False, **train_args):
         k = self.validation_param
         # Create k subsets of the dataset
@@ -138,7 +138,7 @@ class Fitter(metaclass=abc.ABCMeta):
 
             # TODO Return average test error
             # Calculate test error, with subset i as test set
-            avg_test_error += costs.compute_mse(subsets_y[i], subsets_x[i], w)
+            avg_test_error += cost_f(subsets_y[i], subsets_x[i], w)
 
             # Predict labels for local testing data
             lc_pred_y = parsers.predict_labels(w, subsets_x[i], is_logistic=is_logistic)
@@ -149,7 +149,8 @@ class Fitter(metaclass=abc.ABCMeta):
         avg_test_error /= k
         avg_accuracy /= k
 
-        print('(avg error: ', avg_test_error, ', avg accuracy: ', avg_accuracy, ')')
+        print('Train-CrossValidate: error={err}, accuracy={acc}'.format(err=avg_test_error,
+                                                                        acc=avg_accuracy))
 
         return w, avg_test_error, avg_accuracy
 
@@ -174,7 +175,7 @@ class GDFitter(Fitter):
             **hyper
         }
 
-        return self._trainer(data_y, data_x, data_ids, f, **args)
+        return self._trainer(data_y, data_x, data_ids, train_f=f, cost_f=costs.compute_mse, **args)
 
     @property
     def hyper_params(self):
@@ -206,7 +207,7 @@ class SGDFitter(GDFitter):
             **hyper
         }
 
-        return self._trainer(data_y, data_x, data_ids, f, **args)
+        return self._trainer(data_y, data_x, data_ids, train_f=f, cost_f=costs.compute_mse, **args)
 
 
 class LeastFitter(Fitter):
@@ -221,7 +222,7 @@ class LeastFitter(Fitter):
             **hyper
         }
 
-        return self._trainer(data_y, data_x, data_ids, f, **args)
+        return self._trainer(data_y, data_x, data_ids, train_f=f, cost_f=costs.compute_mse, **args)
 
     def _make_predictions(self, w, test_tx, test_ids):
         if self.do_std:
@@ -246,7 +247,7 @@ class RidgeFitter(Fitter):
             **hyper
         }
 
-        return self._trainer(data_y, data_x, data_ids, f, **args)
+        return self._trainer(data_y, data_x, data_ids, train_f=f, cost_f=costs.compute_mse, **args)
 
     @property
     def hyper_params(self):
@@ -284,7 +285,8 @@ class LogisticFitter(Fitter):
             **hyper,
         }
 
-        return self._trainer(data_y, data_x, data_ids, f, is_logistic=True, **args)
+        return self._trainer(data_y, data_x, data_ids, train_f=f,
+                             cost_f=costs.compute_log_likelihood_error, is_logistic=True, **args)
 
     @property
     def hyper_params(self):
@@ -324,7 +326,8 @@ class RegLogisticFitter(LogisticFitter):
             **hyper,
         }
 
-        return self._trainer(data_y, data_x, data_ids, f, is_logistic=True, **args)
+        return self._trainer(data_y, data_x, data_ids, train_f=f,
+                             cost_f=costs.compute_log_likelihood_error, is_logistic=True, **args)
 
     @property
     def hyper_params(self):
