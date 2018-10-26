@@ -38,8 +38,5 @@ def compute_mae(y, tx, w):
 
 def compute_log_likelihood_error(y, tx, w):
     """Compute the loss of the log-likelihood cost function."""
-    def row_cost(yn, xn):
-        xn_dot_w = xn.T.dot(w)
-        return np.log(1 + np.exp(xn_dot_w)) - yn * xn_dot_w
-
-    return sum((row_cost(yn, xn) for yn, xn in zip(y, tx)))
+    tx_dot_w = tx.dot(w)
+    return np.sum(np.log(1 + np.exp(tx_dot_w))) - y.dot(tx_dot_w)

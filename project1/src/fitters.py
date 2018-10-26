@@ -97,27 +97,29 @@ class Fitter(metaclass=abc.ABCMeta):
         else:
             return self._train_and_validate
 
-    def _train_and_validate(self, data_y, data_x, data_ids, f, **args):
+    def _train_and_validate(self, data_y, data_x, data_ids, train_f,
+                            is_logistic=False, **train_args):
         ratio = self.validation_param
 
         # Split data
         train_y, train_x, lc_test_y, lc_test_x = parsers.split_data_rand(data_y, data_x, ratio)
         # call train function
-        w, err = f(train_y, train_x, **args)
+        w, err = train_f(train_y, train_x, **train_args)
 
         # TODO: Check if test error is correct and return it
         test_error = costs.compute_mse(lc_test_y, lc_test_x, w)
 
         # Predict labels for local testing data
-        lc_pred_y = parsers.predict_labels(w, lc_test_x)
+        lc_pred_y = parsers.predict_labels(w, lc_test_x, is_logistic=is_logistic)
 
         matches = np.sum(lc_test_y == lc_pred_y)
         accuracy = matches / lc_test_y.shape[0]
-        print('(error: ', test_error, ', accuracy: ', accuracy, ')')
+        print('Train-Validate: error={err}, accuracy={acc}'.format(err=test_error, acc=accuracy))
 
         return w, test_error, accuracy
 
-    def _train_and_cross_validate(self, data_y, data_x, data_ids, f, **args):
+    def _train_and_cross_validate(self, data_y, data_x, data_ids, train_f,
+                                  is_logistic=False, **train_args):
         k = self.validation_param
         # Create k subsets of the dataset
         subsets_y, subsets_x = parsers.k_fold_random_split(data_y, data_x, k)
@@ -132,14 +134,14 @@ class Fitter(metaclass=abc.ABCMeta):
             train_y = np.concatenate([subsets_y[j] for j in range(k) if j != i], 0)
 
             # call train function
-            w, err = f(train_y, train_x, **args)
+            w, err = train_f(train_y, train_x, **train_args)
 
             # TODO Return average test error
             # Calculate test error, with subset i as test set
             avg_test_error += costs.compute_mse(subsets_y[i], subsets_x[i], w)
 
             # Predict labels for local testing data
-            lc_pred_y = parsers.predict_labels(w, subsets_x[i])
+            lc_pred_y = parsers.predict_labels(w, subsets_x[i], is_logistic=is_logistic)
 
             matches = np.sum(subsets_y[i] == lc_pred_y)
             avg_accuracy += matches / subsets_y[i].shape[0]
@@ -282,7 +284,7 @@ class LogisticFitter(Fitter):
             **hyper,
         }
 
-        return self._trainer(data_y, data_x, data_ids, f, **args)
+        return self._trainer(data_y, data_x, data_ids, f, is_logistic=True, **args)
 
     @property
     def hyper_params(self):
@@ -322,7 +324,7 @@ class RegLogisticFitter(LogisticFitter):
             **hyper,
         }
 
-        return self._trainer(data_y, data_x, data_ids, f, **args)
+        return self._trainer(data_y, data_x, data_ids, f, is_logistic=True, **args)
 
     @property
     def hyper_params(self):

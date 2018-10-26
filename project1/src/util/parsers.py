@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-
 import numpy as np
+
+import costs
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
     """
@@ -211,9 +212,7 @@ def sigmoid(z):
 def predict_labels(weights, data, is_logistic=False):
     """Generate class predictions given weights, and a test data matrix."""
     if is_logistic:
-        y_pred = np.dot(data, weights)
-        # TODO: REMEMBER TO CHECK IF SIGMOID HELPS
-        #y_pred = sigmoid(np.dot(data, weights))
+        y_pred = costs.sigmoid(data.dot(weights))
         y_pred[np.where(y_pred <= 0.5)] = 0
         y_pred[np.where(y_pred > 0.5)] = 1
     else:

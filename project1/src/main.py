@@ -19,9 +19,11 @@ def _res_validation_param(param, do_cross_validation):
         return param if 0.0 < param <= 1.0 else None
 
 
-def _load_data(data_path):
-    train_y, train_tx, train_ids = loaders.load_csv_data(os.path.join(data_path, 'train.csv'))
-    _, test_tx, test_ids = loaders.load_csv_data(os.path.join(data_path, 'test.csv'))
+def _load_data(data_path, is_logistic=False):
+    train_y, train_tx, train_ids = loaders.load_csv_data(os.path.join(data_path, 'train.csv'),
+                                                         is_logistic=is_logistic)
+    _, test_tx, test_ids = loaders.load_csv_data(os.path.join(data_path, 'test.csv'),
+                                                 is_logistic=is_logistic)
     return train_y, train_tx, train_ids, test_tx, test_ids
 
 
@@ -104,7 +106,7 @@ def ridge(ctx, lambda_):
 @click.pass_context
 def log(ctx, max_iters, gamma):
     fitter = ft.LogisticFitter(max_iters, gamma, **ctx.obj)  # create fitter object
-    fitter.run(*_load_data(ctx.obj['data_path']))  # load data and run
+    fitter.run(*_load_data(ctx.obj['data_path'], is_logistic=True))  # load data and run
 
 
 @cli.command(help='Regularised Logistic Regression')
@@ -114,7 +116,7 @@ def log(ctx, max_iters, gamma):
 @click.pass_context
 def reglog(ctx, max_iters, gamma, lambda_):
     fitter = ft.RegLogisticFitter(max_iters, gamma, lambda_, **ctx.obj)  # create fitter object
-    fitter.run(*_load_data(ctx.obj['data_path']))  # load data and run
+    fitter.run(*_load_data(ctx.obj['data_path'], is_logistic=True))  # load data and run
 
 
 if __name__ == '__main__':
