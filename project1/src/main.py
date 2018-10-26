@@ -113,7 +113,7 @@ def log(ctx, max_iters, gamma):
 @click.argument('lambda_', type=float, metavar='LAMBDA')
 @click.pass_context
 def reglog(ctx, max_iters, gamma, lambda_):
-    fitter = ft.LogisticFitter(max_iters, gamma, lambda_, **ctx.obj)  # create fitter object
+    fitter = ft.RegLogisticFitter(max_iters, gamma, lambda_, **ctx.obj)  # create fitter object
     fitter.run(*_load_data(ctx.obj['data_path']))  # load data and run
 
 

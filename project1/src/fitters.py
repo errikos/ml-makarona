@@ -25,15 +25,15 @@ class Fitter(metaclass=abc.ABCMeta):
 
     The core method implementations are located in implementations.py.
     """
-    def __init__(self, validation_param, degree=1, do_std=True, do_rm_samples=False,
-                 do_rm_features=False, do_tune_hyper=False, do_cross_validate=False, **kwargs):
+    def __init__(self, validation_param, degree=1, std=True, rm_samples=False,
+                 rm_features=False, tune=False, cross=False, **kwargs):
         self.validation_param = validation_param
         self.degree = degree
-        self.do_std = do_std
-        self.do_rm_samples = do_rm_samples
-        self.do_rm_features = do_rm_features
-        self.do_tune_hyper = do_tune_hyper
-        self.do_cross_validate = do_cross_validate
+        self.do_std = std
+        self.do_rm_samples = rm_samples
+        self.do_rm_features = rm_features
+        self.do_tune_hyper = tune
+        self.do_cross_validate = cross
 
     def _run(self, data_y, data_x, data_ids, *hyper):
         raise NotImplementedError
@@ -51,7 +51,7 @@ class Fitter(metaclass=abc.ABCMeta):
         data_x = parsers.build_poly(data_x, self.degree, True)
         self.mean, self.std = mean, std
 
-        w_err_hyper_tuples = []  # (w, err) pairs accumulator
+        w_err_hyper_tuples = []  # (w, err, acc) triplets accumulator
         for hyper_params in self._obtain_hyper_params():
             print('Running with hyper parameters:', end=' ')
             print_dict(hyper_params)
@@ -59,8 +59,9 @@ class Fitter(metaclass=abc.ABCMeta):
                                         hyper_params))
         
         # Find w that corresponds to minimum error and predict based on that
-        (w, err), hyper_params = min(w_err_hyper_tuples, key=lambda x: x[0][1])
-        print('Found optimal w with error={err} and hyper parameters:'.format(err=err), end=' ')
+        (w, err, acc), hyper_params = min(w_err_hyper_tuples, key=lambda x: x[0][1])
+        print('\nFound optimal w with error={err}, accuracy={acc} and hyper parameters:'\
+                                                    .format(err=err, acc=acc), end=' ')
         print_dict(hyper_params)
         print()
 
@@ -102,9 +103,9 @@ class Fitter(metaclass=abc.ABCMeta):
 
         matches = np.sum(lc_test_y == lc_pred_y)
         accuracy = matches / lc_test_y.shape[0]
-        print('Accuracy:', accuracy)
+        print('(error: ', test_error, ', accuracy: ', accuracy, ')')
 
-        return w, test_error
+        return w, test_error, accuracy
 
     def _train_and_cross_validate(self, data_y, data_x, data_ids, f, **args):
         k = self.validation_param
@@ -135,9 +136,10 @@ class Fitter(metaclass=abc.ABCMeta):
 
         avg_test_error /= k
         avg_accuracy /= k
-        print("Average accuracy:", avg_accuracy)
 
-        return w, avg_test_error
+        print('(avg error: ', avg_test_error, ', avg accuracy: ', avg_accuracy, ')')
+
+        return w, avg_test_error, avg_accuracy
 
     def _make_predictions(self, w, test_x, test_ids):
         raise NotImplementedError
