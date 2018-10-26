@@ -34,15 +34,14 @@ def build_poly(x, degree, do_add_bias):
     """
     numOfFeat = x.shape[1]
     richArray = np.zeros((x.shape[0], degree * numOfFeat))
+
     j = 0
-
     for feat in range(0, numOfFeat):
-
         for i in range(1, degree + 1):
             richArray[:, j] = np.power(x[:, feat], i)
             j = j + 1
 
-    if(do_add_bias):
+    if do_add_bias:
         zeroethPower = np.ones((x.shape[0], 1))
         res = np.concatenate((zeroethPower, richArray), axis=1)
     else:
