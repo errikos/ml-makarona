@@ -40,30 +40,40 @@ class Fitter(metaclass=abc.ABCMeta):
 
     def run(self, data_y, data_x, data_ids, test_x, test_ids):
         if self.do_rm_features:
+            print('Dropping features...')
             data_x = parsers.cut_features(data_x)
         if self.do_rm_samples:
+            print('Dropping samples...')
             data_y, data_x = parsers.cut_samples(data_y, data_x)
         if self.do_std:
+            print('Standardising...')
             data_x, mean, std = parsers.standardize(data_x)
 
         # TODO Move build_poly inside train and validate(?)
         # Build polynomial
         data_x = parsers.build_poly(data_x, self.degree, True)
-        self.mean, self.std = mean, std
+        # self.mean, self.std = mean, std
 
         w_err_hyper_tuples = []  # (w, err, acc) triplets accumulator
         for hyper_params in self._obtain_hyper_params():
             print('Running with hyper parameters:', end=' ')
             print_dict(hyper_params)
-            w_err_hyper_tuples.append((self._run(data_y, data_x, data_ids, **hyper_params),
-                                        hyper_params))
+            print()
+
+            result = self._run(data_y, data_x, data_ids, **hyper_params)
+            w_err_hyper_tuples.append((result, hyper_params))
         
         # Find w that corresponds to minimum error and predict based on that
         (w, err, acc), hyper_params = min(w_err_hyper_tuples, key=lambda x: x[0][1])
-        print('\nFound optimal w with error={err}, accuracy={acc} and hyper parameters:'\
-                                                    .format(err=err, acc=acc), end=' ')
+        print('Found optimal w with error={err}, accuracy={acc}'.format(err=err, acc=acc),
+              'and hyper parameters:', end=' ')
         print_dict(hyper_params)
         print()
+
+        if np.isnan(err):
+            print('Error is infinite, computation has probably diverged.',
+                  'Abandoning predictions!')
+            return
 
         self._make_predictions(w, test_x, test_ids)
 
