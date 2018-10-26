@@ -273,13 +273,11 @@ class LogisticFitter(Fitter):
         self.gamma = gamma
 
     def _run(self, data_y, data_x, data_ids, **hyper):
-        N, D = data_x.shape
-        # add constant term to input samples
-        data_x = np.concatenate((np.ones((N, 1)), data_x), axis=1)
+        _, D = data_x.shape
 
         f = impl.logistic_regression
         args = {
-            'initial_w': np.zeros((D + 1, )),
+            'initial_w': np.zeros((D, )),
             'max_iters': self.max_iters,
             **hyper,
         }
