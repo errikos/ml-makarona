@@ -114,9 +114,10 @@ def log(ctx, max_iters, gamma, newton=False):
 @click.argument('max_iters', type=int)
 @click.argument('gamma', type=float)
 @click.argument('lambda_', type=float, metavar='LAMBDA')
+@click.option('--newton', is_flag=True, help="Run Newton's method.")
 @click.pass_context
-def reglog(ctx, max_iters, gamma, lambda_):
-    fitter = ft.RegLogisticFitter(max_iters, gamma, lambda_, **ctx.obj)  # create fitter object
+def reglog(ctx, max_iters, gamma, lambda_, newton):
+    fitter = ft.RegLogisticFitter(max_iters, gamma, lambda_, newton, **ctx.obj)  # create fitter
     fitter.run(*_load_data(ctx.obj['data_path'], is_logistic=True))  # load data and run
 
 

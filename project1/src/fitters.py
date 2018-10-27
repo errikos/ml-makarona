@@ -40,14 +40,17 @@ class Fitter(metaclass=abc.ABCMeta):
 
     def run(self, data_y, data_x, data_ids, test_x, test_ids):
         if self.do_rm_features:
-            print('Dropping features...')
+            print('Dropping features...', end=' ', flush=True)
             data_x = parsers.cut_features(data_x)
+            print('DONE')
         if self.do_rm_samples:
-            print('Dropping samples...')
+            print('Dropping samples...', end=' ', flush=True)
             data_y, data_x = parsers.cut_samples(data_y, data_x)
+            print('DONE')
         if self.do_std:
-            print('Standardising...')
+            print('Standardising...', end=' ', flush=True)
             data_x, mean, std = parsers.standardize(data_x)
+            print('DONE')
 
         # TODO Move build_poly inside train and validate(?)
         # Build polynomial
@@ -107,6 +110,7 @@ class Fitter(metaclass=abc.ABCMeta):
         w, err = train_f(train_y, train_x, **train_args)
 
         # TODO: Check if test error is correct and return it
+        # TODO: Somehow pass λ for regularised logistic regression
         test_error = cost_f(lc_test_y, lc_test_x, w)
 
         # Predict labels for local testing data
@@ -138,6 +142,7 @@ class Fitter(metaclass=abc.ABCMeta):
 
             # TODO Return average test error
             # Calculate test error, with subset i as test set
+            # TODO: Somehow pass λ for regularised logistic regression
             avg_test_error += cost_f(subsets_y[i], subsets_x[i], w)
 
             # Predict labels for local testing data
@@ -312,19 +317,18 @@ class LogisticFitter(Fitter):
 class RegLogisticFitter(LogisticFitter):
     """Fitter implementing regularised logistic regression using Newton's method."""
 
-    def __init__(self, max_iters, gamma, lambda_, **kwargs):
-        super().__init__(max_iters, gamma, **kwargs)
+    def __init__(self, max_iters, gamma, lambda_, newton, **kwargs):
+        super().__init__(max_iters, gamma, newton, **kwargs)
         self.lambda_ = lambda_
 
     def _run(self, data_y, data_x, data_ids, **hyper):
-        N, D = data_x.shape
-        # add constant term to input samples
-        data_x = np.concatenate((np.ones((N, 1)), data_x), axis=1)
+        _, D = data_x.shape
 
         f = impl.reg_logistic_regression
         args = {
-            'initial_w': np.zeros((D + 1, )),
+            'initial_w': np.zeros((D, )),
             'max_iters': self.max_iters,
+            'newton': self.newton,
             **hyper,
         }
 

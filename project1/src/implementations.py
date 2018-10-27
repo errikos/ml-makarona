@@ -59,23 +59,39 @@ def ridge_regression(y, tx, lambda_):
 
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma, newton=False):
-    """Logistic regression using GD or SGD."""
+    """Logistic regression using GD or Newton's method."""
 
     def step_factor(w, grad):
         """Calculate the step-factor depending on whether we are running the Newton method."""
         return grad if not newton else np.linalg.solve(gradients.hessian(w, tx), grad)
 
+    desc = 'LOG' if not newton else 'LOG-N'
     w = initial_w
 
     for n_iter in range(max_iters):
         grad = gradients.log_likelihood_gradient(y, tx, w)  # compute log-likelihood gradient
         w = w - gamma * step_factor(w, grad)  # compute new w
         loss = costs.compute_log_likelihood_error(y, tx, w)
-        print("LOG({bi}/{ti}): loss={l}".format(bi=n_iter, ti=max_iters-1, l=loss))
+        print("{desc}({bi}/{ti}): loss={l}".format(desc=desc, bi=n_iter, ti=max_iters-1, l=loss))
     
     return w, loss
 
 
-def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
-    """Regularised logistic regression using GD or SGD."""
-    pass
+def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, newton=False):
+    """Regularised logistic regression using GD or Newton's method."""
+
+    def step_factor(w, grad):
+        """Calculate the step-factor depending on whether we are running the Newton method."""
+        return grad if not newton else np.linalg.solve(gradients.hessian(w, tx), grad)
+
+    desc = 'RLOG' if not newton else 'RLOG-N'
+    w = initial_w
+
+    for n_iter in range(max_iters):
+        # compute penalised log likelihood gradient
+        grad = gradients.log_likelihood_gradient(y, tx, w) + lambda_ * w
+        w = w - gamma * step_factor(w, grad)  # compute new w
+        loss = costs.compute_log_likelihood_error(y, tx, w, lambda_)
+        print("{desc}({bi}/{ti}): loss={l}".format(desc=desc, bi=n_iter, ti=max_iters-1, l=loss))
+    
+    return w, loss
