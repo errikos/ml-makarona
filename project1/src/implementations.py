@@ -92,9 +92,13 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, newton=
         # comp1 = gradients.log_likelihood_gradient(y, tx, w)
         # comp2 = lambda_ * w
         # print(comp1, comp2)
+
         grad = gradients.log_likelihood_gradient(y, tx, w) + lambda_ * w
+        avg_abs_grad = np.mean(np.absolute(grad))
         w = w - gamma * step_factor(w, grad)  # compute new w
         loss = costs.compute_log_likelihood_error(y, tx, w) + (lambda_ / 2.0) * w.dot(w)
-        print("{desc}({bi}/{ti}): loss={l}".format(desc=desc, bi=n_iter, ti=max_iters-1, l=loss))
+        print("{desc}({bi}/{ti}): loss={l}. avg abs grad val={g}".format(desc=desc, bi=n_iter, 
+                                                                        ti=max_iters-1, l=loss,
+                                                                        g=avg_abs_grad))
     
     return w, loss

@@ -61,6 +61,7 @@ class Fitter(metaclass=abc.ABCMeta):
 
         # Find a good initial w
         initial_w, _ = impl.ridge_regression(data_y, data_x, lambda_=0.1)
+        print("Initial w is: ", initial_w)
 
         w_err_hyper_tuples = []  # (w, err, acc) triplets accumulator
         for hyper_params in self._obtain_hyper_params():
