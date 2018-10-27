@@ -270,10 +270,11 @@ class RidgeFitter(Fitter):
 class LogisticFitter(Fitter):
     """Fitter implementing logistic regression using Newton's method."""
 
-    def __init__(self, max_iters, gamma, **kwargs):
+    def __init__(self, max_iters, gamma, newton=False, **kwargs):
         super().__init__(**kwargs)
         self.max_iters = max_iters
         self.gamma = gamma
+        self.newton = newton
 
     def _run(self, data_y, data_x, data_ids, **hyper):
         _, D = data_x.shape
@@ -282,6 +283,7 @@ class LogisticFitter(Fitter):
         args = {
             'initial_w': np.zeros((D, )),
             'max_iters': self.max_iters,
+            'newton': self.newton,
             **hyper,
         }
 

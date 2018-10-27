@@ -103,9 +103,10 @@ def ridge(ctx, lambda_):
 @cli.command(help='Logistic Regression')
 @click.argument('max_iters', type=int)
 @click.argument('gamma', type=float)
+@click.option('--newton', is_flag=True, help="Run Newton's method.")
 @click.pass_context
-def log(ctx, max_iters, gamma):
-    fitter = ft.LogisticFitter(max_iters, gamma, **ctx.obj)  # create fitter object
+def log(ctx, max_iters, gamma, newton=False):
+    fitter = ft.LogisticFitter(max_iters, gamma, newton, **ctx.obj)  # create fitter object
     fitter.run(*_load_data(ctx.obj['data_path'], is_logistic=True))  # load data and run
 
 
