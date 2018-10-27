@@ -35,7 +35,7 @@ class Fitter(metaclass=abc.ABCMeta):
         self.do_tune_hyper = tune
         self.do_cross_validate = cross
 
-    def _run(self, data_y, data_x, data_ids, *hyper):
+    def _run(self, data_y, data_x, data_ids, initial_w=None, **hyper):
         raise NotImplementedError
 
     def run(self, data_y, data_x, data_ids, test_x, test_ids):
@@ -59,13 +59,16 @@ class Fitter(metaclass=abc.ABCMeta):
         data_x = parsers.build_poly(data_x, self.degree, True)
         # self.mean, self.std = mean, std
 
+        # Find a good initial w
+        initial_w, _ = impl.ridge_regression(data_y, data_x, lambda_=0.1)
+
         w_err_hyper_tuples = []  # (w, err, acc) triplets accumulator
         for hyper_params in self._obtain_hyper_params():
             print('Running with hyper parameters:', end=' ')
             print_dict(hyper_params)
             print()
 
-            result = self._run(data_y, data_x, data_ids, **hyper_params)
+            result = self._run(data_y, data_x, data_ids, initial_w, **hyper_params)
             w_err_hyper_tuples.append((result, hyper_params))
         
         # Find w that corresponds to minimum error and predict based on that
@@ -81,6 +84,7 @@ class Fitter(metaclass=abc.ABCMeta):
             return
 
         self._make_predictions(w, test_x, test_ids)
+        return w
 
     @property
     def hyper_params(self):
@@ -180,11 +184,12 @@ class GDFitter(Fitter):
         self.max_iters = max_iters
         self.gamma = gamma
 
-    def _run(self, data_y, data_x, data_ids, **hyper):
-        w_init = np.zeros((data_x.shape[1], ))
+    def _run(self, data_y, data_x, data_ids, initial_w=None, **hyper):
+        _, D = data_x.shape
+
         f = impl.least_squares_GD
         args = {
-            'initial_w': w_init,
+            'initial_w': initial_w if initial_w is not None else np.zeros((D, )),
             'max_iters': self.max_iters,
             **hyper
         }
@@ -212,11 +217,12 @@ class GDFitter(Fitter):
 class SGDFitter(GDFitter):
     """Fitter implementing linear regression using stochastic gradient descent."""
 
-    def _run(self, data_y, data_x, data_ids, **hyper):
-        w_init = np.zeros((data_x.shape[1], ))
+    def _run(self, data_y, data_x, data_ids, initial_w=None, **hyper):
+        _, D = data_x.shape
+
         f = impl.least_squares_SGD
         args = {
-            'initial_w': w_init,
+            'initial_w': initial_w if initial_w is not None else np.zeros((D, )),
             'max_iters': self.max_iters,
             **hyper
         }
@@ -230,7 +236,7 @@ class LeastFitter(Fitter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def _run(self, data_y, data_x, data_ids, **hyper):
+    def _run(self, data_y, data_x, data_ids, initial_w=None, **hyper):
         f = impl.least_squares
         args = {
             **hyper
@@ -255,7 +261,7 @@ class RidgeFitter(Fitter):
         super().__init__(**kwargs)
         self.lambda_ = lambda_
 
-    def _run(self, data_y, data_x, data_ids, **hyper):
+    def _run(self, data_y, data_x, data_ids, initial_w=None, **hyper):
         f = impl.ridge_regression
         args = {
             **hyper
@@ -290,12 +296,12 @@ class LogisticFitter(Fitter):
         self.gamma = gamma
         self.newton = newton
 
-    def _run(self, data_y, data_x, data_ids, **hyper):
+    def _run(self, data_y, data_x, data_ids, initial_w=None, **hyper):
         _, D = data_x.shape
 
         f = impl.logistic_regression
         args = {
-            'initial_w': np.zeros((D, )),
+            'initial_w': initial_w if initial_w is not None else np.zeros((D, )),
             'max_iters': self.max_iters,
             'newton': self.newton,
             **hyper,
@@ -330,12 +336,12 @@ class RegLogisticFitter(LogisticFitter):
         super().__init__(max_iters, gamma, newton, **kwargs)
         self.lambda_ = lambda_
 
-    def _run(self, data_y, data_x, data_ids, **hyper):
+    def _run(self, data_y, data_x, data_ids, initial_w=None, **hyper):
         _, D = data_x.shape
 
         f = impl.reg_logistic_regression
         args = {
-            'initial_w': np.zeros((D, )),
+            'initial_w': initial_w if initial_w is not None else np.zeros((D, )),
             'max_iters': self.max_iters,
             'newton': self.newton,
             **hyper,
