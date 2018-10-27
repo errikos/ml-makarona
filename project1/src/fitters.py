@@ -45,7 +45,9 @@ class Fitter(metaclass=abc.ABCMeta):
             print('DONE')
         if self.do_rm_samples:
             print('Dropping samples...', end=' ', flush=True)
+            print(data_x.shape)
             data_y, data_x = parsers.cut_samples(data_y, data_x)
+            print(data_x.shape)
             print('DONE')
         if self.do_std:
             print('Standardising...', end=' ', flush=True)
@@ -113,12 +115,19 @@ class Fitter(metaclass=abc.ABCMeta):
         # TODO: Somehow pass λ for regularised logistic regression
         test_error = cost_f(lc_test_y, lc_test_x, w)
 
+        # Predict labels for local training data
+        lc_pred_y_tr = parsers.predict_labels(w, train_x, is_logistic=is_logistic)
         # Predict labels for local testing data
         lc_pred_y = parsers.predict_labels(w, lc_test_x, is_logistic=is_logistic)
 
+        # Training matches
+        matches_tr = np.sum(train_y == lc_pred_y_tr)
+        accuracy_tr = matches_tr / train_y.shape[0]
+        # Local Testing matches
         matches = np.sum(lc_test_y == lc_pred_y)
         accuracy = matches / lc_test_y.shape[0]
-        print('Train-Validate: error={err}, accuracy={acc}'.format(err=test_error, acc=accuracy))
+        print('Train-Validate: Training error={err}, Training accuracy={acc}'.format(err=err, acc=accuracy_tr))
+        print('Train-Validate: Test error={err}, Test accuracy={acc}'.format(err=test_error, acc=accuracy))
 
         return w, test_error, accuracy
 

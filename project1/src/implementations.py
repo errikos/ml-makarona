@@ -89,6 +89,9 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, newton=
 
     for n_iter in range(max_iters):
         # compute penalised log likelihood gradient
+        # comp1 = gradients.log_likelihood_gradient(y, tx, w)
+        # comp2 = lambda_ * w
+        # print(comp1, comp2)
         grad = gradients.log_likelihood_gradient(y, tx, w) + lambda_ * w
         w = w - gamma * step_factor(w, grad)  # compute new w
         loss = costs.compute_log_likelihood_error(y, tx, w) + (lambda_ / 2.0) * w.dot(w)
