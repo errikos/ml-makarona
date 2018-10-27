@@ -84,17 +84,14 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, newton=
         """Calculate the step-factor depending on whether we are running the Newton method."""
         return grad if not newton else np.linalg.solve(gradients.hessian(w, tx), grad)
 
-    N, _ = tx.shape
-    lambda_ = N * lambda_
- 
     desc = 'RLOG' if not newton else 'RLOG-N'
     w = initial_w
 
     for n_iter in range(max_iters):
         # compute penalised log likelihood gradient
-        grad = gradients.log_likelihood_gradient(y, tx, w) + lambda_ * np.sum(w)
+        grad = gradients.log_likelihood_gradient(y, tx, w) + lambda_ * w
         w = w - gamma * step_factor(w, grad)  # compute new w
-        loss = costs.compute_log_likelihood_error(y, tx, w, lambda_)
+        loss = costs.compute_log_likelihood_error(y, tx, w) + (lambda_ / 2.0) * w.dot(w)
         print("{desc}({bi}/{ti}): loss={l}".format(desc=desc, bi=n_iter, ti=max_iters-1, l=loss))
     
     return w, loss
