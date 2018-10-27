@@ -84,7 +84,6 @@ class Fitter(metaclass=abc.ABCMeta):
             return
 
         self._make_predictions(w, test_x, test_ids)
-        return w
 
     @property
     def hyper_params(self):
