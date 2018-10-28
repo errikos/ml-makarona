@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import itertools
+
 import numpy as np
 import implementations as impl
 import costs
@@ -344,3 +346,19 @@ def predict_features(x, cascading=True):
 
         if cascading:
             goodCols = np.where(np.all(x != -999, axis=0))[0]
+
+def augment_with_binary(tx):
+    """Add a binary column for every group of columns containing -999 values."""
+    _, D = tx.shape
+
+    # construct groups of columns that have the -999 values in the same places
+    groups = sorted([(tx[np.where(tx[:, i] == -999)].shape[0], i) for i in range(D)],
+                    key=lambda x: x[0])
+    groups = itertools.dropwhile(lambda x: x[0] == 0, groups)
+    groups = [(group, [k[1] for k in keys])
+              for group, keys in itertools.groupby(groups, key=lambda x: x[0])]
+    # groups is a list of pairs: first element is -999 count, second element is a list of columns
+
+    # create binary columns for each group, concatenate with tx and return
+    binary_cols = np.array([tx[:, cols[0]] != -999 for _, cols in groups]).T.astype(int)
+    return np.concatenate((tx, binary_cols), axis=1)
