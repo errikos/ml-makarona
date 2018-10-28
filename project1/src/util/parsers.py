@@ -154,12 +154,12 @@ def standardize(x):
     """Standardise each feature. Returns mean of last feat."""
     for i in range(1, x.shape[1]):
         feature = x[:,i]
-        #invalid = [feature == -999.0]
+        invalid = [feature == -999.0]
         valid   = [feature != -999.0]
         mean    = np.mean(feature[valid])
         std     = np.std(feature[valid])
         feature = (feature-mean)/std
-        #feature[invalid] = 0
+        feature[invalid] = 0
         x[:,i] = feature
     return x, mean, std
 
