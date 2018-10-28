@@ -134,6 +134,15 @@ def k_fold_random_split(y, x, k, seed=1):
 
     return subsets_y, subsets_x
 
+def rm_999(x):
+    for i in range(x.shape[1]):
+        feature = x[:,i]
+        invalid = [feature == -999.0]
+        valid   = [feature != -999.0]
+        mean    = np.mean(feature[valid])
+        feature[invalid] = mean
+        x[:,i] = feature
+    return x
 # My version: Calculates mean and std PER FEATURE without the -999s
 # Sets all -999 to mean (0)
 # Gets 0.74336 (linear regr)

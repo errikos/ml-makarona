@@ -50,14 +50,19 @@ class Fitter(metaclass=abc.ABCMeta):
             print(data_x.shape)
             print('DONE')
         if self.do_std:
-            print('Standardising...', end=' ', flush=True)
-            data_x, mean, std = parsers.standardize(data_x)
+            print('Setting -999 to mean...', end=' ', flush=True)
+            data_x = parsers.rm_999(data_x)
             print('DONE')
 
         # TODO Move build_poly inside train and validate(?)
         # Build polynomial
         data_x = parsers.build_poly(data_x, self.degree, True)
         # self.mean, self.std = mean, std
+        
+        if self.do_std:
+            print('Standardising...', end=' ', flush=True)
+            data_x, mean, std = parsers.standardize(data_x)
+            print('DONE')
 
         # Find a good initial w
         initial_w, _ = impl.ridge_regression(data_y, data_x, lambda_=0.1)
