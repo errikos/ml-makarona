@@ -115,7 +115,6 @@ class Fitter(metaclass=abc.ABCMeta):
         # call train function
         w, err = train_f(train_y, train_x, **train_args)
 
-        # TODO: Check if test error is correct and return it
         # TODO: Somehow pass λ for regularised logistic regression
         test_error = cost_f(lc_test_y, lc_test_x, w)
 
@@ -153,7 +152,6 @@ class Fitter(metaclass=abc.ABCMeta):
             # call train function
             w, err = train_f(train_y, train_x, **train_args)
 
-            # TODO Return average test error
             # Calculate test error, with subset i as test set
             # TODO: Somehow pass λ for regularised logistic regression
             avg_test_error += cost_f(subsets_y[i], subsets_x[i], w)

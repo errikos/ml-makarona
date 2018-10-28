@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-
+import implementations as impl
 import costs
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
@@ -107,7 +107,6 @@ def split_data_rand(y, x, ratio, myseed=1):
     return y_tr, x_tr, y_te, x_te 
 
 
-
 def k_fold_random_split(y, x, k, seed=1):
 
     # Create space for k subsets of the initial dataset
@@ -136,7 +135,7 @@ def k_fold_random_split(y, x, k, seed=1):
 # Gets 0.74336 (linear regr)
 def standardize(x):
     """Standardise each feature. Returns mean of last feat."""
-    for i  in range(x.shape[1]):
+    for i in range(x.shape[1]):
         feature = x[:,i]
         invalid = [feature == -999.0]
         valid   = [feature != -999.0]
@@ -146,6 +145,31 @@ def standardize(x):
         feature[invalid] = 0
         x[:,i] = feature
     return x, mean, std
+
+# TODO remove!
+def cut_20percent(y, x):
+    """Cuts first 20% of rows from the dataset"""
+
+    num_row = len(y)
+    indices = list(reversed(range(num_row)))
+
+    index_split = int(np.floor(0.2 * num_row))
+    # index_split = 0
+
+    ret_y = y[indices[index_split:]]
+    ret_x = x[indices[index_split:]]
+
+    print("ret_y.shape:", ret_y.shape)
+    print("ret_x.shape:", ret_x.shape)
+
+    return ret_y, ret_x
+
+
+def cut_feature(x, i):
+    """Remove given feature"""
+    return np.delete(x, [i], 1)
+
+
 
 # My version2: Calculates mean and std PER FEATURE without the -999s
 # Sets all -999 to normal or uniform values with 0 mean and 1 std
@@ -191,6 +215,45 @@ def standardize(x):
 #     return x, mean_x, std_x
 
 
+def build_poly_of_feature(x_i, degree):
+
+    """Augments given feature to the specified degree and returns it"""
+
+    richArray = np.zeros((x_i.shape[0], degree))
+
+    for i in range(1, degree + 1):
+        richArray[:, (i-1)] = np.power(x_i[:], i)
+
+    return richArray
+
+
+def augment_feature(x, i, degree):
+    """ Augments feature i of matrix x to a polynomial of the given degree
+    and returns the modified matrix x"""
+
+    y = x[:, :i]
+    temp = build_poly_of_feature(x[:, i], degree)
+    y = np.concatenate((y, temp), axis=1)
+    y = np.concatenate((y[:, :], x[:, (i+1) :]), axis=1)
+    return y
+
+
+def build_poly_with_degrees(x, degrees):
+    """Gets a dataset of features and an array of degrees to be applied
+       to each feature, and augments features according to ther specified
+       degree 
+    """
+
+    y = np.empty((x.shape[0], 1))
+    j = 0
+    for i in range(x.shape[1]):
+        temp = build_poly_of_feature(x[:, i], degrees[i])
+        y = np.concatenate((y[:, :j], temp), axis=1)
+        j = y.shape[1]
+        y = np.concatenate((y[:, :], x[:, (i+1) :]), axis=1)
+
+    return y
+
 def sigmoid(z):
     """Return the sigmoid of x.
     x can be scalar or vector
@@ -235,11 +298,41 @@ def cut_samples(some_y, some_tx):
     cut_tx = allData[:, 1:]
     return cut_y.reshape((cut_y.shape[0],)), cut_tx
 
-
 def cut_features(some_tx):
-    """Remove features that have at least on -999 value."""
+    """Remove features that have at least one -999 value."""
     return np.delete(some_tx, [0, 4, 5, 6, 12, 23, 24, 25, 26, 27, 28], 1)
     # return np.delete(some_tx, [4,5,6,12,23,24,25,26,27,28], 1)
     # return np.delete(some_tx, [4,5,6,12,26,27,28], 1)
     # return np.delete(some_tx, [4], 1)
     # return some_tx
+
+def predict_features(x, cascading=True):
+
+    # Discover columns that have at least one -999
+    # and columns that have no -999 
+    badRows, badCols = np.where(x == -999)
+    badCols = np.unique(badCols)
+    goodCols = np.where(np.all(x != -999, axis=0))[0]
+
+    for col in badCols:
+    # For the given column, find which rows have -999 and which rows don't
+
+        badRows = np.where(x[:, col] == -999)
+        goodRows = np.where(x[:, col] != -999)
+
+        # Train the model based on the rows that don't have any -999 for the fiven column
+        train = x[goodRows]
+        train_x = train[:, goodCols]
+        train_y = train[:, col]
+
+        test = x[badRows]
+        test_x = test[:, goodCols]
+
+        w, loss = impl.ridge_regression(train_y, train_x, 0.02)
+
+        test_y = np.dot(test_x, w)
+
+        x[badRows, col] = test_y
+
+        if cascading:
+            goodCols = np.where(np.all(x != -999, axis=0))[0]
