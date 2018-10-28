@@ -31,7 +31,7 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
 
-def build_poly(x, degree, do_add_bias, odd_only=False):
+def build_poly(x, degree, do_add_bias=True, odd_only=False):
     """Polynomial basis functions for input data x, for j=0 up to j=degree.
     Important: Adds bias column.
     """
@@ -277,16 +277,6 @@ def build_poly_with_degrees(x, degrees, do_add_bias=True):
         res = y
     return res
 
-
-def sigmoid(z):
-    """Return the sigmoid of x.
-    x can be scalar or vector
-    could remove one exp
-    """
-    sig = np.exp(z)/(np.exp(z) + 1)
-    # print("Sigmoid is: ", sig, " (if high, causes overflow)")
-    return sig
-
 # Their Version
 # def predict_labels(weights, data):
 #     """Generates class predictions given weights, and a test data matrix"""
@@ -376,3 +366,11 @@ def augment_with_binary(tx):
     # create binary columns for each group, concatenate with tx and return
     binary_cols = np.array([tx[:, cols[0]] != -999 for _, cols in groups]).T.astype(int)
     return np.concatenate((tx, binary_cols), axis=1)
+
+def build_poly_smart(tx, degree=1):
+    N, _ = tx.shape
+
+    poly_features = np.array([np.power(feat, d+1, where=(feat != -999))
+                             for feat, d in itertools.product(tx.T, range(0, degree, 2))])
+
+    return np.concatenate((np.ones((N, 1)), poly_features.T), axis=1)
