@@ -258,7 +258,7 @@ def build_poly_with_degrees(x, degrees, do_add_bias=True):
         zeroethPower = np.ones((x.shape[0], 1))
         res = np.concatenate((zeroethPower, y), axis=1)
     else:
-        res = richArray
+        res = y
     return res
 
 
