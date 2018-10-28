@@ -29,16 +29,18 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
 
-def build_poly(x, degree, do_add_bias):
+def build_poly(x, degree, do_add_bias, odd_only=False):
     """Polynomial basis functions for input data x, for j=0 up to j=degree.
     Important: Adds bias column.
     """
     numOfFeat = x.shape[1]
     richArray = np.zeros((x.shape[0], degree * numOfFeat))
 
+    step = 2 if odd_only else 1
+
     j = 0
     for feat in range(0, numOfFeat):
-        for i in range(1, degree + 1):
+        for i in range(1, degree + 1, step):
             richArray[:, j] = np.power(x[:, feat], i)
             j = j + 1
 
