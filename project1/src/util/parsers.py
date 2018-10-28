@@ -240,7 +240,7 @@ def augment_feature(x, i, degree):
     return y
 
 
-def build_poly_with_degrees(x, degrees):
+def build_poly_with_degrees(x, degrees, do_add_bias=True):
     """Gets a dataset of features and an array of degrees to be applied
        to each feature, and augments features according to ther specified
        degree 
@@ -254,7 +254,13 @@ def build_poly_with_degrees(x, degrees):
         j = y.shape[1]
         y = np.concatenate((y[:, :], x[:, (i+1) :]), axis=1)
 
-    return y
+    if do_add_bias:
+        zeroethPower = np.ones((x.shape[0], 1))
+        res = np.concatenate((zeroethPower, y), axis=1)
+    else:
+        res = richArray
+    return res
+
 
 def sigmoid(z):
     """Return the sigmoid of x.
