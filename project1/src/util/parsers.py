@@ -142,7 +142,8 @@ def rm_999(x):
         valid   = [feature != -999.0]
         mean    = np.mean(feature[valid])
         std     = np.std(feature[valid])
-        feature[invalid] = mean
+        median  = np.median(feature[valid])
+        feature[invalid] = median
         x[:,i] = feature
     return x
 

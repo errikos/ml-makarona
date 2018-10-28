@@ -58,10 +58,10 @@ class Fitter(metaclass=abc.ABCMeta):
         data_x = parsers.build_poly(data_x, self.degree, True)
         # self.mean, self.std = mean, std
 
-        if self.do_std:
-            print('Standardising...', end=' ', flush=True)
-            data_x, mean, std = parsers.standardize(data_x)
-            print('DONE')
+        # if self.do_std:
+        #     print('Standardising...', end=' ', flush=True)
+        #     data_x, mean, std = parsers.standardize(data_x)
+        #     print('DONE')
 
         # Find a good initial w
         initial_w, _ = impl.ridge_regression(data_y, data_x, lambda_=0.1)
@@ -294,8 +294,8 @@ class RidgeFitter(Fitter):
             test_tx = parsers.rm_999(test_tx)
 
         test_tx = parsers.build_poly(test_tx, self.degree, True)
-        if self.do_std:
-            test_tx, _, _ = parsers.standardize(test_tx)
+        # if self.do_std:
+        #     test_tx, _, _ = parsers.standardize(test_tx)
 
         test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
         pred_y = parsers.predict_labels(w, test_tx)
