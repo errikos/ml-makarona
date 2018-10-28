@@ -212,8 +212,8 @@ class GDFitter(Fitter):
 
         test_tx =  parsers.build_poly(test_tx, self.degree, True)
 
-        if self.do_std:
-            test_tx, _, _ = parsers.standardize(test_tx)
+        # if self.do_std:
+        #     test_tx, _, _ = parsers.standardize(test_tx)
 
         test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
         pred_y = parsers.predict_labels(w, test_tx)
@@ -257,8 +257,8 @@ class LeastFitter(Fitter):
 
         test_tx =  parsers.build_poly(test_tx, self.degree, True)
 
-        if self.do_std:
-            test_tx, _, _  = parsers.standardize(test_tx)
+        # if self.do_std:
+        #     test_tx, _, _  = parsers.standardize(test_tx)
 
         test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
         pred_y = parsers.predict_labels(w, test_tx)
@@ -339,8 +339,8 @@ class LogisticFitter(Fitter):
             test_tx = parsers.rm_999(test_tx)
         
         test_tx = parsers.build_poly(test_tx, self.degree, True)
-        if self.do_std:
-            test_tx, _, _ = parsers.standardize(test_tx)
+        # if self.do_std:
+        #     test_tx, _, _ = parsers.standardize(test_tx)
 
         test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
         pred_y = parsers.predict_labels(w, test_tx, is_logistic=True)
