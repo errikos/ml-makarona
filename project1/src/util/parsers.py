@@ -134,28 +134,32 @@ def k_fold_random_split(y, x, k, seed=1):
 
     return subsets_y, subsets_x
 
+# Before poly
 def rm_999(x):
     for i in range(x.shape[1]):
         feature = x[:,i]
         invalid = [feature == -999.0]
         valid   = [feature != -999.0]
         mean    = np.mean(feature[valid])
+        std     = np.std(feature[valid])
         feature[invalid] = mean
         x[:,i] = feature
     return x
+
+# After poly
 # My version: Calculates mean and std PER FEATURE without the -999s
 # Sets all -999 to mean (0)
 # Gets 0.74336 (linear regr)
 def standardize(x):
     """Standardise each feature. Returns mean of last feat."""
-    for i in range(x.shape[1]):
+    for i in range(1, x.shape[1]):
         feature = x[:,i]
-        invalid = [feature == -999.0]
+        #invalid = [feature == -999.0]
         valid   = [feature != -999.0]
         mean    = np.mean(feature[valid])
         std     = np.std(feature[valid])
         feature = (feature-mean)/std
-        feature[invalid] = 0
+        #feature[invalid] = 0
         x[:,i] = feature
     return x, mean, std
 

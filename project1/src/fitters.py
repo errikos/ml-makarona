@@ -54,11 +54,10 @@ class Fitter(metaclass=abc.ABCMeta):
             data_x = parsers.rm_999(data_x)
             print('DONE')
 
-        # TODO Move build_poly inside train and validate(?)
         # Build polynomial
         data_x = parsers.build_poly(data_x, self.degree, True)
         # self.mean, self.std = mean, std
-        
+
         if self.do_std:
             print('Standardising...', end=' ', flush=True)
             data_x, mean, std = parsers.standardize(data_x)
@@ -66,7 +65,7 @@ class Fitter(metaclass=abc.ABCMeta):
 
         # Find a good initial w
         initial_w, _ = impl.ridge_regression(data_y, data_x, lambda_=0.1)
-        print("Initial w is: ", initial_w)
+        #print("Initial w is: ", initial_w)
 
         w_err_hyper_tuples = []  # (w, err, acc) triplets accumulator
         for hyper_params in self._obtain_hyper_params():
@@ -209,10 +208,15 @@ class GDFitter(Fitter):
     
     def _make_predictions(self, w, test_tx, test_ids):
         if self.do_std:
+            test_tx = parsers.rm_999(test_tx)
+
+        test_tx =  parsers.build_poly(test_tx, self.degree, True)
+
+        if self.do_std:
             test_tx, _, _ = parsers.standardize(test_tx)
 
         test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
-        pred_y = parsers.predict_labels(w, parsers.build_poly(test_tx, self.degree, True))
+        pred_y = parsers.predict_labels(w, test_tx)
 
         loaders.create_csv_submission(test_ids, pred_y, "gd.csv")
 
@@ -249,10 +253,15 @@ class LeastFitter(Fitter):
 
     def _make_predictions(self, w, test_tx, test_ids):
         if self.do_std:
-            test_tx, _, _ = parsers.standardize(test_tx)
+            test_tx= parsers.rm_999(test_tx)
+
+        test_tx =  parsers.build_poly(test_tx, self.degree, True)
+
+        if self.do_std:
+            test_tx, _, _  = parsers.standardize(test_tx)
 
         test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
-        pred_y = parsers.predict_labels(w, parsers.build_poly(test_tx, self.degree, True))
+        pred_y = parsers.predict_labels(w, test_tx)
 
         loaders.create_csv_submission(test_ids, pred_y, "least.csv")
 
@@ -282,10 +291,14 @@ class RidgeFitter(Fitter):
     
     def _make_predictions(self, w, test_tx, test_ids):
         if self.do_std:
+            test_tx = parsers.rm_999(test_tx)
+
+        test_tx = parsers.build_poly(test_tx, self.degree, True)
+        if self.do_std:
             test_tx, _, _ = parsers.standardize(test_tx)
 
         test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
-        pred_y = parsers.predict_labels(w, parsers.build_poly(test_tx, self.degree, True))
+        pred_y = parsers.predict_labels(w, test_tx)
 
         loaders.create_csv_submission(test_ids, pred_y, "ridge.csv")
 
@@ -323,11 +336,14 @@ class LogisticFitter(Fitter):
 
     def _make_predictions(self, w, test_tx, test_ids):
         if self.do_std:
+            test_tx = parsers.rm_999(test_tx)
+        
+        test_tx = parsers.build_poly(test_tx, self.degree, True)
+        if self.do_std:
             test_tx, _, _ = parsers.standardize(test_tx)
 
         test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
-        pred_y = parsers.predict_labels(w, parsers.build_poly(test_tx, self.degree, True),
-                                        is_logistic=True)
+        pred_y = parsers.predict_labels(w, test_tx, is_logistic=True)
 
         loaders.create_csv_submission(test_ids, pred_y, "logistic.csv")
 
