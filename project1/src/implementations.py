@@ -5,7 +5,7 @@ import numpy as np
 import costs
 import gradients
 
-from util import parsers
+from util import modifiers
 
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     """Linear regression usign Gradient Descent."""
@@ -24,7 +24,7 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
     """Linear regression usign Stochastic Gradient Descent."""
     w = initial_w
     for n_iter in range(max_iters):
-        for y_batch, tx_batch in parsers.batch_iter(y, tx, batch_size=1, num_batches=1):
+        for y_batch, tx_batch in modifiers.batch_iter(y, tx, batch_size=1, num_batches=1):
             # compute a stochastic gradient and loss
             grad, err = gradients.mse_gradient(y_batch, tx_batch, w)
             loss = costs.mse(err)

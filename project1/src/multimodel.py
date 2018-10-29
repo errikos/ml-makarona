@@ -2,7 +2,7 @@
 import os
 import numpy as np
 
-from util import parsers, loaders
+from util import modifiers, loaders
 from implementations import ridge_regression
 
 
@@ -52,7 +52,7 @@ def _split_test_dataset(tx, jet_num_idx=22):
 
 
 def _build_polynomials(degrees, *txs):
-    return (parsers.build_poly(tx, degree=d) for tx, d in zip(txs, degrees))
+    return (modifiers.build_poly(tx, degree=d) for tx, d in zip(txs, degrees))
 
 
 def run_multimodel():
@@ -70,11 +70,11 @@ def run_multimodel():
     ratio = 0.8
     seed = 155
     # split data to train and test
-    train_jet0_y, train_jet0_tx, test_jet0_y, test_jet0_tx = parsers.split_data_rand(
+    train_jet0_y, train_jet0_tx, test_jet0_y, test_jet0_tx = modifiers.split_data_rand(
         train_jet0_y, train_jet0_tx, ratio, seed)
-    train_jet1_y, train_jet1_tx, test_jet1_y, test_jet1_tx = parsers.split_data_rand(
+    train_jet1_y, train_jet1_tx, test_jet1_y, test_jet1_tx = modifiers.split_data_rand(
         train_jet1_y, train_jet1_tx, ratio, seed)
-    train_jetR_y, train_jetR_tx, test_jetR_y, test_jetR_tx = parsers.split_data_rand(
+    train_jetR_y, train_jetR_tx, test_jetR_y, test_jetR_tx = modifiers.split_data_rand(
         train_jetR_y, train_jetR_tx, ratio, seed)
 
     print('Jet 0 shape:', *train_jet0_tx.shape)
@@ -90,7 +90,7 @@ def run_multimodel():
     print('Losses per Jet:', round(loss0, 4), round(loss1, 4), round(lossR, 4))
 
     # get local testing accuracy
-    train_y_preds = parsers.predict_labels(w0, train_jet0_tx)
+    train_y_preds = modifiers.predict_labels(w0, train_jet0_tx)
 
     tr_acc = []
     te_acc = []
@@ -100,13 +100,13 @@ def run_multimodel():
                                          [train_jet0_tx, train_jet1_tx, train_jetR_tx],
                                          [test_jet0_y, test_jet1_y, test_jetR_y],
                                          [test_jet0_tx, test_jet1_tx, test_jetR_tx]):
-        train_y_preds = parsers.predict_labels(w, tr_x)
+        train_y_preds = modifiers.predict_labels(w, tr_x)
         matches_tr = np.sum(tr_y == train_y_preds)
         accuracy_tr = matches_tr / tr_y.shape[0]
         tr_acc.append(accuracy_tr)
         print('Training Accuracy:', round(accuracy_tr, 4))
 
-        test_y_preds = parsers.predict_labels(w, te_x)
+        test_y_preds = modifiers.predict_labels(w, te_x)
         matches_te = np.sum(te_y == test_y_preds)
         accuracy_te = matches_te / te_y.shape[0]
         te_acc.append(accuracy_te)
@@ -142,13 +142,13 @@ def run_multimodel():
     test_jet0_tx, test_jet1_tx, test_jetR_tx = _build_polynomials(degrees, test_jet0_tx, test_jet1_tx, test_jetR_tx)
 
     # make predictions and append IDs for each jet
-    pred_jet0 = parsers.predict_labels(w0, test_jet0_tx)
+    pred_jet0 = modifiers.predict_labels(w0, test_jet0_tx)
     pred_jet0 = np.array(list(zip(pred_jet0, test_jet0_tx_ids)))
 
-    pred_jet1 = parsers.predict_labels(w1, test_jet1_tx)
+    pred_jet1 = modifiers.predict_labels(w1, test_jet1_tx)
     pred_jet1 = np.array(list(zip(pred_jet1, test_jet1_tx_ids)))
 
-    pred_jetR = parsers.predict_labels(wR, test_jetR_tx)
+    pred_jetR = modifiers.predict_labels(wR, test_jetR_tx)
     pred_jetR = np.array(list(zip(pred_jetR, test_jetR_tx_ids)))
 
     # concatenate results and sort based on ID

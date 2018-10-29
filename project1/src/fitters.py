@@ -6,7 +6,7 @@ import os
 
 import implementations as impl
 import costs
-from util import loaders, parsers
+from util import loaders, modifiers
 import costs
 
 
@@ -41,19 +41,19 @@ class Fitter(metaclass=abc.ABCMeta):
     def run(self, data_y, data_x, data_ids, test_x, test_ids):
         if self.do_drop_minus_999_features:
             print('Dropping features containing at least one -999 value...', end=' ', flush=True)
-            data_x = parsers.drop_minus_999_features(data_x)
+            data_x = modifiers.drop_minus_999_features(data_x)
             print('DONE')
         if self.do_eliminate_minus_999:
             print('Eliminating -999 values by setting them to feature median...', end=' ', flush=True)
-            data_x = parsers.eliminate_minus_999(data_x)
+            data_x = modifiers.eliminate_minus_999(data_x)
             print('DONE')
 
         # Build polynomial
-        data_x = parsers.build_poly(data_x, self.degree, True)
+        data_x = modifiers.build_poly(data_x, self.degree, True)
 
         if self.do_std:
             print('Standardising...', end=' ', flush=True)
-            data_x = parsers.standardize(data_x)
+            data_x = modifiers.standardize(data_x)
             print('DONE')
 
         # Find a good initial w
@@ -110,7 +110,7 @@ class Fitter(metaclass=abc.ABCMeta):
         ratio = self.validation_param
 
         # Split data
-        train_y, train_x, lc_test_y, lc_test_x = parsers.split_data_rand(data_y, data_x, ratio)
+        train_y, train_x, lc_test_y, lc_test_x = modifiers.split_data_rand(data_y, data_x, ratio)
         # call train function
         w, err = train_f(train_y, train_x, **train_args)
 
@@ -118,9 +118,9 @@ class Fitter(metaclass=abc.ABCMeta):
         test_error += self.penalization(w)
 
         # Predict labels for local training data
-        lc_pred_y_tr = parsers.predict_labels(w, train_x, is_logistic=is_logistic)
+        lc_pred_y_tr = modifiers.predict_labels(w, train_x, is_logistic=is_logistic)
         # Predict labels for local testing data
-        lc_pred_y = parsers.predict_labels(w, lc_test_x, is_logistic=is_logistic)
+        lc_pred_y = modifiers.predict_labels(w, lc_test_x, is_logistic=is_logistic)
 
         # Training matches
         matches_tr = np.sum(train_y == lc_pred_y_tr)
@@ -137,7 +137,7 @@ class Fitter(metaclass=abc.ABCMeta):
                                   is_logistic=False, **train_args):
         k = self.validation_param
         # Create k subsets of the dataset
-        subsets_y, subsets_x = parsers.k_fold_random_split(data_y, data_x, k)
+        subsets_y, subsets_x = modifiers.k_fold_random_split(data_y, data_x, k)
 
         # Train and validate k times, each time picking subset i as the test set
         avg_test_error = 0
@@ -157,12 +157,12 @@ class Fitter(metaclass=abc.ABCMeta):
             avg_test_error += self.penalization(w)
 
             # Predict labels for local training data
-            lc_pred_y_tr = parsers.predict_labels(w, train_x, is_logistic=is_logistic)
+            lc_pred_y_tr = modifiers.predict_labels(w, train_x, is_logistic=is_logistic)
             matches_tr = np.sum(train_y == lc_pred_y_tr)
             avg_train_accuracy += matches_tr / train_y.shape[0]
 
             # Predict labels for local testing data
-            lc_pred_y = parsers.predict_labels(w, subsets_x[i], is_logistic=is_logistic)
+            lc_pred_y = modifiers.predict_labels(w, subsets_x[i], is_logistic=is_logistic)
             matches = np.sum(subsets_y[i] == lc_pred_y)
             avg_test_accuracy += matches / subsets_y[i].shape[0]
 
@@ -181,18 +181,18 @@ class Fitter(metaclass=abc.ABCMeta):
 
     def _make_predictions_core(self, w, test_tx, test_ids, filename, **kwargs):
         if self.do_drop_minus_999_features:
-            test_tx = parsers.drop_minus_999_features(test_tx)
+            test_tx = modifiers.drop_minus_999_features(test_tx)
         if self.do_eliminate_minus_999:
-            test_tx = parsers.eliminate_minus_999(test_tx)
+            test_tx = modifiers.eliminate_minus_999(test_tx)
         
         # augment features
-        test_tx = parsers.build_poly(test_tx, self.degree, True)
+        test_tx = modifiers.build_poly(test_tx, self.degree, True)
 
         if self.do_std:
-            test_tx = parsers.standardize(test_tx)
+            test_tx = modifiers.standardize(test_tx)
 
-        test_tx = parsers.drop_minus_999_features(test_tx) if self.do_drop_minus_999_features else test_tx
-        pred_y = parsers.predict_labels(w, test_tx, **kwargs)
+        test_tx = modifiers.drop_minus_999_features(test_tx) if self.do_drop_minus_999_features else test_tx
+        pred_y = modifiers.predict_labels(w, test_tx, **kwargs)
 
         loaders.create_csv_submission(test_ids, pred_y, filename)
 
