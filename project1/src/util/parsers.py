@@ -155,12 +155,13 @@ def standardize(x):
     """Standardise each feature. Returns mean of last feat."""
     for i in range(1, x.shape[1]):
         feature = x[:,i]
-        invalid = [feature == -999.0]
-        valid   = [feature != -999.0]
+        invalid = feature == -999.0
+        valid   = feature != -999.0
         mean    = np.mean(feature[valid])
         std     = np.std(feature[valid])
         feature = (feature-mean)/std
-        feature[invalid] = 0
+        feature[invalid] = -999.0
+        # feature[invalid] = 0
         x[:,i] = feature
     return x, mean, std
 
@@ -372,5 +373,9 @@ def build_poly_smart(tx, degree=1):
 
     poly_features = np.array([np.power(feat, d+1, where=(feat != -999))
                              for feat, d in itertools.product(tx.T, range(0, degree, 2))])
+
+    feat1 = np.array([tx[:, 22] * tx[:, 23]])
+    feat2 = np.array([tx[:, 22] * tx[:, 24]])
+    feat3 = np.array([tx[:, 22] * tx[:, 25]])
 
     return np.concatenate((np.ones((N, 1)), poly_features.T), axis=1)

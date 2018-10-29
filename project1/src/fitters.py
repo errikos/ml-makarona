@@ -6,7 +6,7 @@ import os
 
 import implementations as impl
 import costs
-from util import loaders, parsers, testers
+from util import loaders, parsers
 import costs
 
 
