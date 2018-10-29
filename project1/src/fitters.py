@@ -168,8 +168,25 @@ class Fitter(metaclass=abc.ABCMeta):
 
         return w, avg_test_error, avg_accuracy
 
-    def _make_predictions(self, w, test_x, test_ids):
+    def _make_predictions(self, w, test_tx, test_ids):
         raise NotImplementedError
+
+    def _make_predictions_core(self, w, test_tx, test_ids, filename, **kwargs):
+        if self.do_drop_minus_999_features:
+            test_tx = parsers.drop_minus_999_features(test_tx)
+        if self.do_eliminate_minus_999:
+            test_tx = parsers.eliminate_minus_999(test_tx)
+        
+        # augment features
+        test_tx = parsers.build_poly(test_tx, self.degree, True)
+
+        if self.do_std:
+            test_tx = parsers.standardize(test_tx)
+
+        test_tx = parsers.drop_minus_999_features(test_tx) if self.do_drop_minus_999_features else test_tx
+        pred_y = parsers.predict_labels(w, test_tx, **kwargs)
+
+        loaders.create_csv_submission(test_ids, pred_y, filename)
 
 
 class GDFitter(Fitter):
@@ -201,19 +218,7 @@ class GDFitter(Fitter):
             yield v / 10
     
     def _make_predictions(self, w, test_tx, test_ids):
-        if self.do_eliminate_minus_999:
-            test_tx = parsers.eliminate_minus_999(test_tx)
-
-        # augment features
-        test_tx = parsers.build_poly(test_tx, self.degree, True)
-
-        if self.do_std:
-            test_tx = parsers.standardize(test_tx)
-
-        test_tx = parsers.drop_minus_999_features(test_tx) if self.do_drop_minus_999_features else test_tx
-        pred_y = parsers.predict_labels(w, test_tx)
-
-        loaders.create_csv_submission(test_ids, pred_y, "gd.csv")
+        self._make_predictions_core(w, test_tx, test_ids, 'gd.csv')
 
 
 class SGDFitter(GDFitter):
@@ -247,19 +252,7 @@ class LeastFitter(Fitter):
         return self._trainer(data_y, data_x, data_ids, train_f=f, cost_f=costs.compute_mse, **args)
 
     def _make_predictions(self, w, test_tx, test_ids):
-        if self.do_eliminate_minus_999:
-            test_tx= parsers.eliminate_minus_999(test_tx)
-
-        # augment features
-        test_tx =  parsers.build_poly(test_tx, self.degree, True)
-
-        if self.do_std:
-            test_tx = parsers.standardize(test_tx)
-
-        test_tx = parsers.drop_minus_999_features(test_tx) if self.do_drop_minus_999_features else test_tx
-        pred_y = parsers.predict_labels(w, test_tx)
-
-        loaders.create_csv_submission(test_ids, pred_y, "least.csv")
+        self._make_predictions_core(w, test_tx, test_ids, 'least.csv')
 
 
 class RidgeFitter(Fitter):
@@ -286,19 +279,7 @@ class RidgeFitter(Fitter):
             yield v
     
     def _make_predictions(self, w, test_tx, test_ids):
-        if self.do_eliminate_minus_999:
-            test_tx = parsers.eliminate_minus_999(test_tx)
-
-        # augment features
-        test_tx = parsers.build_poly(test_tx, self.degree, True)
-
-        if self.do_std:
-            test_tx = parsers.standardize(test_tx)
-
-        test_tx = parsers.drop_minus_999_features(test_tx) if self.do_drop_minus_999_features else test_tx
-        pred_y = parsers.predict_labels(w, test_tx)
-
-        loaders.create_csv_submission(test_ids, pred_y, "ridge.csv")
+        self._make_predictions_core(w, test_tx, test_ids, 'ridge.csv')
 
 
 class LogisticFitter(Fitter):
@@ -333,19 +314,7 @@ class LogisticFitter(Fitter):
             yield v / 10
 
     def _make_predictions(self, w, test_tx, test_ids):
-        if self.do_eliminate_minus_999:
-            test_tx = parsers.eliminate_minus_999(test_tx)
-        
-        # augment features
-        test_tx = parsers.build_poly(test_tx, self.degree, True)
-
-        if self.do_std:
-            test_tx = parsers.standardize(test_tx)
-
-        test_tx = parsers.drop_minus_999_features(test_tx) if self.do_drop_minus_999_features else test_tx
-        pred_y = parsers.predict_labels(w, test_tx, is_logistic=True)
-
-        loaders.create_csv_submission(test_ids, pred_y, "logistic.csv")
+        self._make_predictions_core(w, test_tx, test_ids, 'logistic.csv', is_logistic=True)
 
 
 class RegLogisticFitter(LogisticFitter):
