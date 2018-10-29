@@ -6,8 +6,8 @@ import implementations as impl
 import costs
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
-    """
-    Generate a minibatch iterator for a dataset.
+    """Generate a minibatch iterator for a dataset.
+
     Takes as input two iterables (here the output desired values 'y' and the input data 'tx')
     Outputs an iterator which gives mini-batches of `batch_size` matching elements from `y` and `tx`.
     Data can be randomly shuffled to avoid ordering in the original data messing with the randomness of the minibatches.
@@ -31,91 +31,42 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
 
-def build_poly(x, degree, do_add_bias=True, odd_only=False):
-    """Polynomial basis functions for input data x, for j=0 up to j=degree.
-    Important: Adds bias column.
-    """
-    numOfFeat = x.shape[1]
-    richArray = np.zeros((x.shape[0], degree * numOfFeat))
+def build_poly(tx, degree, do_add_bias=True, odd_only=False):
+    """Polynomial basis functions for input data x, for j=0 up to j=degree."""
+    _, D = tx.shape
+    new_tx = np.zeros((tx.shape[0], degree * D))
 
     step = 2 if odd_only else 1
 
     j = 0
-    for feat in range(0, numOfFeat):
+    for feat in range(0, D):
         for i in range(1, degree + 1, step):
-            richArray[:, j] = np.power(x[:, feat], i)
+            new_tx[:, j] = np.power(tx[:, feat], i)
             j = j + 1
 
-    if do_add_bias:
-        zeroethPower = np.ones((x.shape[0], 1))
-        res = np.concatenate((zeroethPower, richArray), axis=1)
-    else:
-        res = richArray
-    return res
+    return np.concatenate((np.ones((tx.shape[0], 1)), new_tx), axis=1) if do_add_bias else new_tx
 
 
-def split_data(x, y, ids, ratio, seed=1):
-    """Split data determninistically."""
+def split_data_rand(y, tx, ratio, seed=1):
+    """Randomly split the dataset, based on the split ratio and the given seed."""
     np.random.seed(seed)
 
-    train_x = x[0:np.floor(ratio * len(x)).astype(int)]
-    train_y = y[0:np.floor(ratio * len(x)).astype(int)]
-    train_ids = y[0:np.floor(ratio * len(x)).astype(int)]
-
-    test_x = x[np.floor(ratio * len(x)).astype(int):len(x)]
-    test_y = y[np.floor(ratio * len(x)).astype(int):len(x)]
-    test_ids = y[np.floor(ratio * len(x)).astype(int):len(x)]
-
-    return train_x, train_y, train_ids, test_x, test_y, test_ids
-
-# # My version. Uses reshape
-# def split_data_rand(y, x, ids, ratio, seed=1):
-#     """Split data to training and testing set given the ratio."""
-#     # print(x[1,:])
-#     np.random.seed(seed)
-#     #y = y.reshape(y.shape[0], 1)
-#     allData = np.concatenate((y, x), axis=1)
-
-#     np.random.shuffle(allData)
-
-#     y = allData[:, 0]
-#     x = allData[:, 1:]
-
-#     # print(x[1,:])
-#     train_x = x[0:np.floor(ratio * len(x)).astype(int)]
-#     train_y = y[0:np.floor(ratio * len(x)).astype(int)]
-#     train_ids = ids[0:np.floor(ratio * len(x)).astype(int)]
-
-#     test_x = x[np.floor(ratio * len(x)).astype(int):len(x)]
-#     test_y = y[np.floor(ratio * len(x)).astype(int):len(x)]
-#     test_ids = ids[np.floor(ratio * len(x)).astype(int):len(x)]
-
-#     return train_y, train_x, train_ids, test_y, test_x, test_ids
-
-
-def split_data_rand(y, x, ratio, myseed=1):
-    """split the dataset based on the split ratio."""
-    # set seed
-    np.random.seed(myseed)
     # generate random indices
     num_row = len(y)
     indices = np.random.permutation(num_row)
     index_split = int(np.floor(ratio * num_row))
     index_tr = indices[: index_split]
     index_te = indices[index_split:]
-    # create split
-    x_tr = x[index_tr]
-    x_te = x[index_te]
-    y_tr = y[index_tr]
-    y_te = y[index_te]
-    return y_tr, x_tr, y_te, x_te 
+
+    # create and return splits
+    return y[index_tr], tx[index_tr], y[index_te], tx[index_te]
 
 
-def k_fold_random_split(y, x, k, seed=1):
-
+def k_fold_random_split(y, tx, k, seed=1):
+    """Create k random splits of the y and tx arrays, based on the given seed."""
     # Create space for k subsets of the initial dataset
-    subsets_x = [None] * k
     subsets_y = [None] * k
+    subsets_tx = [None] * k
 
     # Rearrange the indices of the initial dataset
     np.random.seed(seed)
@@ -126,118 +77,47 @@ def k_fold_random_split(y, x, k, seed=1):
 
     # Populate subsets
     for i in range(k - 1):
-        subsets_x[i] = x[indices[i * rows : i * rows + rows]]
         subsets_y[i] = y[indices[i * rows : i * rows + rows]]
+        subsets_tx[i] = tx[indices[i * rows : i * rows + rows]]
 
-    subsets_x[k - 1] = x[indices[(k - 1) * rows :]]
     subsets_y[k - 1] = y[indices[(k - 1) * rows :]]
+    subsets_tx[k - 1] = tx[indices[(k - 1) * rows :]]
 
-    return subsets_y, subsets_x
+    return subsets_y, subsets_tx
 
-# Before poly
-def rm_999(x):
-    for i in range(x.shape[1]):
-        feature = x[:,i]
-        invalid = [feature == -999.0]
-        valid   = [feature != -999.0]
-        mean    = np.mean(feature[valid])
-        std     = np.std(feature[valid])
-        median  = np.median(feature[valid])
-        feature[invalid] = median
-        x[:,i] = feature
-    return x
 
-# After poly
-# My version: Calculates mean and std PER FEATURE without the -999s
-# Sets all -999 to mean (0)
-# Gets 0.74336 (linear regr)
-def standardize(x):
-    """Standardise each feature. Returns mean of last feat."""
-    for i in range(1, x.shape[1]):
-        feature = x[:,i]
+def eliminate_minus_999(tx):
+    """Eliminates the -999 values per feature, by setting them to the feature's median."""
+    for i in range(tx.shape[1]):
+        feature = tx[:, i]
         invalid = feature == -999.0
-        valid   = feature != -999.0
-        mean    = np.mean(feature[valid])
-        std     = np.std(feature[valid])
-        feature = (feature-mean)/std
-        feature[invalid] = -999.0
-        # feature[invalid] = 0
-        x[:,i] = feature
-    return x, mean, std
-
-# TODO remove!
-def cut_20percent(y, x):
-    """Cuts first 20% of rows from the dataset"""
-
-    num_row = len(y)
-    indices = list(reversed(range(num_row)))
-
-    index_split = int(np.floor(0.2 * num_row))
-    # index_split = 0
-
-    ret_y = y[indices[index_split:]]
-    ret_x = x[indices[index_split:]]
-
-    print("ret_y.shape:", ret_y.shape)
-    print("ret_x.shape:", ret_x.shape)
-
-    return ret_y, ret_x
+        valid = feature != -999.0
+        median = np.median(feature[valid])
+        feature[invalid] = median
+        tx[:, i] = feature
+    return tx
 
 
-def cut_feature(x, i):
-    """Remove given feature"""
-    return np.delete(x, [i], 1)
-
-
-
-# My version2: Calculates mean and std PER FEATURE without the -999s
-# Sets all -999 to normal or uniform values with 0 mean and 1 std
-# Gets 0.74124 (normal) (linear regr)
-# Gets 0.74122 (uniform) (linear regr)
-# def standardize(x):
-#     """Standardise each feature. Returns mean of last feat."""
-#     for i in range(x.shape[1]):
-#         feature = x[:,i]
-#         invalid = [feature == -999.0]
-#         valid   = [feature != -999.0]
-#         mean    = np.mean(feature[valid])
-#         std     = np.std(feature[valid])
-#         feature = (feature-mean)/std
-#         #feature[invalid] = 0
-#         #feature[invalid] = np.random.normal(0,1,feature[invalid].shape[0])
-#         #feature[invalid] = np.random.uniform(-1,1,feature[invalid].shape[0])
-#         x[:,i] = feature
-#     return x, mean, std
-
-
-# Their version: Calculates mean and std for the whole table with the -999
-# Gets 0.68998 (linear regr)
-# def standardize(x):
-#     """Standardize the original data set."""
-#     mean_x = np.mean(x)
-#     x = x - mean_x
-#     std_x = np.std(x)
-#     x = x / std_x
-#     return x, mean_x, std_x
-
-# Their version: but per feature
-# Gets 0.74334 (linear regr)
-# def standardize(x):
-#     """Standardize the original data set."""
-#     for i in range(x.shape[1]):
-#         feature = x[:,i]
-#         mean_x = np.mean(feature)
-#         feature = feature - mean_x
-#         std_x = np.std(feature)
-#         feature = feature / std_x
-#         x[:,i] = feature
-#     return x, mean_x, std_x
+def standardize(tx):
+    """Standardise each feature.
+    
+    Standardises each feature by calculating the mean and standard deviation per feature,
+    not taking into account the -999 values. Sets all -999 values to 0.0 (mean).
+    """
+    for i in range(1, tx.shape[1]):
+        feature = tx[:, i]
+        invalid = feature == -999.0
+        valid = feature != -999.0
+        mean = np.mean(feature[valid])
+        std  = np.std(feature[valid])
+        feature = (feature - mean) / std
+        feature[invalid] = 0.0
+        tx[:, i] = feature
+    return tx
 
 
 def build_poly_of_feature(x_i, degree):
-
-    """Augments given feature to the specified degree and returns it"""
-
+    """Augment the given feature to the specified degree and return it."""
     richArray = np.zeros((x_i.shape[0], degree))
 
     for i in range(1, degree + 1):
@@ -246,111 +126,51 @@ def build_poly_of_feature(x_i, degree):
     return richArray
 
 
-def augment_feature(x, i, degree):
-    """ Augments feature i of matrix x to a polynomial of the given degree
-    and returns the modified matrix x"""
-
-    y = x[:, :i]
-    temp = build_poly_of_feature(x[:, i], degree)
+def augment_feature(tx, i, degree):
+    """
+    Augment the feature i of matrix tx to a polynomial of the given degree
+    and return the modified matrix tx.
+    """
+    y = tx[:, :i]
+    temp = build_poly_of_feature(tx[:, i], degree)
     y = np.concatenate((y, temp), axis=1)
-    y = np.concatenate((y[:, :], x[:, (i+1) :]), axis=1)
+    y = np.concatenate((y[:, :], tx[:, (i+1) :]), axis=1)
     return y
 
 
-def build_poly_with_degrees(x, degrees, do_add_bias=True):
+def build_poly_with_degrees(tx, degrees, do_add_bias=True):
     """Gets a dataset of features and an array of degrees to be applied
        to each feature, and augments features according to ther specified
        degree 
     """
-
-    y = np.empty((x.shape[0], 1))
+    y = np.empty((tx.shape[0], 1))
     j = 0
-    for i in range(x.shape[1]):
-        temp = build_poly_of_feature(x[:, i], degrees[i])
+
+    for i in range(tx.shape[1]):
+        temp = build_poly_of_feature(tx[:, i], degrees[i])
         y = np.concatenate((y[:, :j], temp), axis=1)
         j = y.shape[1]
-        y = np.concatenate((y[:, :], x[:, (i+1) :]), axis=1)
+        y = np.concatenate((y[:, :], tx[:, (i+1) :]), axis=1)
 
-    if do_add_bias:
-        zeroethPower = np.ones((x.shape[0], 1))
-        res = np.concatenate((zeroethPower, y), axis=1)
-    else:
-        res = y
-    return res
+    return np.concatenate((np.ones((tx.shape[0], 1)), y), axis=1) if do_add_bias else y
 
-# Their Version
-# def predict_labels(weights, data):
-#     """Generates class predictions given weights, and a test data matrix"""
-#     y_pred = np.dot(data, weights)
-#     y_pred[np.where(y_pred <= 0)] = -1
-#     y_pred[np.where(y_pred > 0)] = 1
-    
-#     return y_pred
 
 def predict_labels(weights, data, is_logistic=False):
     """Generate class predictions given weights, and a test data matrix."""
-    if is_logistic:
-        y_pred = costs.sigmoid(data.dot(weights))
-        y_pred[np.where(y_pred <= 0.5)] = 0
-        y_pred[np.where(y_pred > 0.5)] = 1
-    else:
-        y_pred = np.dot(data, weights)
-        y_pred[np.where(y_pred <= 0)] = -1
-        y_pred[np.where(y_pred > 0)] = 1
+    y_pred = costs.sigmoid(data.dot(weights)) if is_logistic else data.dot(weights)
+    cutoff, lower, upper = (0.5, 0, 1) if is_logistic else (0, -1, 1)
+
+    y_pred[np.where(y_pred <= cutoff)] = lower
+    y_pred[np.where(y_pred > cutoff)] = upper
 
     return y_pred
 
 
-def cut_samples(some_y, some_tx):
-    """Remove all samples that have at least one -999 value."""
-    some_y = some_y.reshape(some_y.shape[0], 1)
-    allData = np.concatenate((some_y, some_tx), axis=1)
-    badRows, badCols = np.where(allData == -999)
-    uniqueBadRows = np.unique(badRows)
-
-    allData = np.delete(allData, uniqueBadRows, 0)
-    cut_y = allData[:, 0]
-    cut_tx = allData[:, 1:]
-    return cut_y.reshape((cut_y.shape[0],)), cut_tx
-
-def cut_features(some_tx):
+def drop_minus_999_features(tx):
     """Remove features that have at least one -999 value."""
-    return np.delete(some_tx, [0, 4, 5, 6, 12, 23, 24, 25, 26, 27, 28], 1)
-    # return np.delete(some_tx, [4,5,6,12,23,24,25,26,27,28], 1)
-    # return np.delete(some_tx, [4,5,6,12,26,27,28], 1)
-    # return np.delete(some_tx, [4], 1)
-    # return some_tx
+    cols = [c for c in range(tx.shape[1]) if -999 in tx[:, c]]
+    return np.delete(tx, cols, 1)
 
-def predict_features(x, cascading=True):
-
-    # Discover columns that have at least one -999
-    # and columns that have no -999 
-    badRows, badCols = np.where(x == -999)
-    badCols = np.unique(badCols)
-    goodCols = np.where(np.all(x != -999, axis=0))[0]
-
-    for col in badCols:
-    # For the given column, find which rows have -999 and which rows don't
-
-        badRows = np.where(x[:, col] == -999)
-        goodRows = np.where(x[:, col] != -999)
-
-        # Train the model based on the rows that don't have any -999 for the fiven column
-        train = x[goodRows]
-        train_x = train[:, goodCols]
-        train_y = train[:, col]
-
-        test = x[badRows]
-        test_x = test[:, goodCols]
-
-        w, loss = impl.ridge_regression(train_y, train_x, 0.02)
-
-        test_y = np.dot(test_x, w)
-
-        x[badRows, col] = test_y
-
-        if cascading:
-            goodCols = np.where(np.all(x != -999, axis=0))[0]
 
 def augment_with_binary(tx):
     """Add a binary column for every group of columns containing -999 values."""
@@ -367,15 +187,3 @@ def augment_with_binary(tx):
     # create binary columns for each group, concatenate with tx and return
     binary_cols = np.array([tx[:, cols[0]] != -999 for _, cols in groups]).T.astype(int)
     return np.concatenate((tx, binary_cols), axis=1)
-
-def build_poly_smart(tx, degree=1):
-    N, _ = tx.shape
-
-    poly_features = np.array([np.power(feat, d+1, where=(feat != -999))
-                             for feat, d in itertools.product(tx.T, range(0, degree, 2))])
-
-    feat1 = np.array([tx[:, 22] * tx[:, 23]])
-    feat2 = np.array([tx[:, 22] * tx[:, 24]])
-    feat3 = np.array([tx[:, 22] * tx[:, 25]])
-
-    return np.concatenate((np.ones((N, 1)), poly_features.T), axis=1)
