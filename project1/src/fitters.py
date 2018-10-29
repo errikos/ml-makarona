@@ -319,7 +319,7 @@ class LogisticFitter(Fitter):
     
     def _tune_gamma(self):
         for v in range(1, 20):
-            yield v / 10
+            yield v / 100
 
     def _make_predictions(self, w, test_tx, test_ids):
         self._make_predictions_core(w, test_tx, test_ids, 'logistic.csv', is_logistic=True)
@@ -354,8 +354,8 @@ class RegLogisticFitter(LogisticFitter):
         }
 
     def _tune_lambda_(self):
-        for v in np.logspace(-12, -1, 20):
-            yield v
+        for v in range(1, 11):
+            yield v * 1000
 
     def penalization(self, w):
         lambda_ = self.lambda_
