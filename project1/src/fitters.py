@@ -141,7 +141,8 @@ class Fitter(metaclass=abc.ABCMeta):
 
         # Train and validate k times, each time picking subset i as the test set
         avg_test_error = 0
-        avg_accuracy = 0
+        avg_test_accuracy = 0
+        avg_train_accuracy = 0
 
         for i in range(k):
             # Concatenate k-1 subsets 
@@ -155,19 +156,25 @@ class Fitter(metaclass=abc.ABCMeta):
             avg_test_error += cost_f(subsets_y[i], subsets_x[i], w)
             avg_test_error += self.penalization(w)
 
+            # Predict labels for local training data
+            lc_pred_y_tr = parsers.predict_labels(w, train_x, is_logistic=is_logistic)
+            matches_tr = np.sum(train_y == lc_pred_y_tr)
+            avg_train_accuracy += matches_tr / train_y.shape[0]
+
             # Predict labels for local testing data
             lc_pred_y = parsers.predict_labels(w, subsets_x[i], is_logistic=is_logistic)
-
             matches = np.sum(subsets_y[i] == lc_pred_y)
-            avg_accuracy += matches / subsets_y[i].shape[0]
+            avg_test_accuracy += matches / subsets_y[i].shape[0]
 
         avg_test_error /= k
-        avg_accuracy /= k
+        avg_test_accuracy /= k
+        avg_train_accuracy /= k
 
-        print('Train-CrossValidate: error={err}, accuracy={acc}'.format(err=avg_test_error,
-                                                                        acc=avg_accuracy))
+        print('Train-CrossValidate: Train: AVG accuracy={acc}'.format(acc=avg_train_accuracy))
+        print('Train-CrossValidate: Test: AVG error={err}, AVG accuracy={acc}'.format(err=avg_test_error,
+                                                                                      acc=avg_test_accuracy))
 
-        return w, avg_test_error, avg_accuracy
+        return w, avg_test_error, avg_test_accuracy
 
     def _make_predictions(self, w, test_tx, test_ids):
         raise NotImplementedError
