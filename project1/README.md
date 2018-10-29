@@ -49,3 +49,8 @@ There are two ways to run the fitters:
     [click](https://click.palletsprojects.com/en/7.x/)-based command line interface,
     which resides in `main.py`. Just run `python3 main.py --help` to get an overview
     of the accepted options.
+
+Both the above options require that you have the train and test datasets
+(train.csv and test.csv, respectivelly) in the same directory.
+The default value is `../data` (set in `main.py`) and may be overwritten
+via the `--data-path` command line option.
