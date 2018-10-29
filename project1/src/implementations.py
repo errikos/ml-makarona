@@ -24,8 +24,7 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
     """Linear regression usign Stochastic Gradient Descent."""
     w = initial_w
     for n_iter in range(max_iters):
-        for y_batch, tx_batch in parsers.batch_iter(
-                y, tx, batch_size=1, num_batches=1):
+        for y_batch, tx_batch in parsers.batch_iter(y, tx, batch_size=1, num_batches=1):
             # compute a stochastic gradient and loss
             grad, err = gradients.mse_gradient(y_batch, tx_batch, w)
             loss = costs.mse(err)
@@ -82,23 +81,28 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, newton=
 
     def step_factor(w, grad):
         """Calculate the step-factor depending on whether we are running the Newton method."""
-        return grad if not newton else np.linalg.solve(gradients.hessian(w, tx), grad)
+        return grad
 
-    desc = 'RLOG' if not newton else 'RLOG-N'
+    def calc_cost(w):
+        """Calculate log-likelihood error, adding the penalisation term."""
+        return costs.compute_log_likelihood_error(y, tx, w) + (lambda_ / 2.0) * w.dot(w)
+
+    desc = 'RLOG'
     w = initial_w
+
+    thres = 1e-8
+    previous_loss = 0.0
 
     for n_iter in range(max_iters):
         # compute penalised log likelihood gradient
-        # comp1 = gradients.log_likelihood_gradient(y, tx, w)
-        # comp2 = lambda_ * w
-        # print(comp1, comp2)
-
         grad = gradients.log_likelihood_gradient(y, tx, w) + lambda_ * w
-        avg_abs_grad = np.mean(np.absolute(grad))
         w = w - gamma * step_factor(w, grad)  # compute new w
-        loss = costs.compute_log_likelihood_error(y, tx, w) + (lambda_ / 2.0) * w.dot(w)
-        print("{desc}({bi}/{ti}): loss={l}. avg abs grad val={g}".format(desc=desc, bi=n_iter, 
-                                                                        ti=max_iters-1, l=loss,
-                                                                        g=avg_abs_grad))
+
+        loss = calc_cost(w)
+        if np.abs(loss - previous_loss) < thres:
+            break
+
+        print("{desc}({bi}/{ti}): loss={l}".format(desc=desc, bi=n_iter, ti=max_iters-1, l=loss))
+        previous_loss = loss  # update previous loss
     
     return w, loss
