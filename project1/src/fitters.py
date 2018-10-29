@@ -50,7 +50,6 @@ class Fitter(metaclass=abc.ABCMeta):
 
         # Build polynomial
         data_x = parsers.build_poly(data_x, self.degree, True)
-        # self.mean, self.std = mean, std
 
         if self.do_std:
             print('Standardising...', end=' ', flush=True)
@@ -59,7 +58,6 @@ class Fitter(metaclass=abc.ABCMeta):
 
         # Find a good initial w
         initial_w, _ = impl.ridge_regression(data_y, data_x, lambda_=0.1)
-        #print("Initial w is: ", initial_w)
 
         w_err_hyper_tuples = []  # (w, err, acc) triplets accumulator
         for hyper_params in self._obtain_hyper_params():
@@ -88,6 +86,9 @@ class Fitter(metaclass=abc.ABCMeta):
     def hyper_params(self):
         return {}
 
+    def penalization(self, w):
+        return 0.0
+
     def _obtain_hyper_params(self):
         if self.do_tune_hyper:
             hyper_providers = {hp: getattr(self, '_tune_{h}'.format(h=hp))()
@@ -113,8 +114,8 @@ class Fitter(metaclass=abc.ABCMeta):
         # call train function
         w, err = train_f(train_y, train_x, **train_args)
 
-        # TODO: Somehow pass λ for regularised logistic regression
         test_error = cost_f(lc_test_y, lc_test_x, w)
+        test_error += self.penalization(w)
 
         # Predict labels for local training data
         lc_pred_y_tr = parsers.predict_labels(w, train_x, is_logistic=is_logistic)
@@ -148,11 +149,11 @@ class Fitter(metaclass=abc.ABCMeta):
             train_y = np.concatenate([subsets_y[j] for j in range(k) if j != i], 0)
 
             # call train function
-            w, err = train_f(train_y, train_x, **train_args)
+            w, _ = train_f(train_y, train_x, **train_args)
 
             # Calculate test error, with subset i as test set
-            # TODO: Somehow pass λ for regularised logistic regression
             avg_test_error += cost_f(subsets_y[i], subsets_x[i], w)
+            avg_test_error += self.penalization(w)
 
             # Predict labels for local testing data
             lc_pred_y = parsers.predict_labels(w, subsets_x[i], is_logistic=is_logistic)
@@ -268,7 +269,7 @@ class RidgeFitter(Fitter):
             **hyper
         }
 
-        return self._trainer(data_y, data_x, data_ids, train_f=f, cost_f=costs.compute_mse, **args)
+        return self._trainer(data_y, data_x, data_ids, train_f=f, cost_f=costs.compute_rmse, **args)
 
     @property
     def hyper_params(self):
@@ -348,3 +349,7 @@ class RegLogisticFitter(LogisticFitter):
     def _tune_lambda_(self):
         for v in np.logspace(-12, -1, 20):
             yield v
+
+    def penalization(self, w):
+        lambda_ = self.lambda_
+        return (lambda_ / 2.0) * w.dot(w)
