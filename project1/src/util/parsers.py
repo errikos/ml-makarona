@@ -87,7 +87,7 @@ def k_fold_random_split(y, tx, k, seed=1):
 
 
 def eliminate_minus_999(tx):
-    """Eliminates the -999 values per feature, by setting them to the feature's median."""
+    """Eliminate the -999 values per feature, by setting them to each feature's median."""
     for i in range(tx.shape[1]):
         feature = tx[:, i]
         invalid = feature == -999.0

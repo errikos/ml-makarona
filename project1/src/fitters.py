@@ -25,13 +25,13 @@ class Fitter(metaclass=abc.ABCMeta):
 
     The core method implementations are located in implementations.py.
     """
-    def __init__(self, validation_param, degree=1, std=True, rm_samples=False,
-                 rm_features=False, tune=False, cross=False, **kwargs):
+    def __init__(self, validation_param, degree=1, std=True, eliminate_minus_999=False,
+                 drop_minus_999_features=False, tune=False, cross=False, **kwargs):
         self.validation_param = validation_param
         self.degree = degree
         self.do_std = std
-        self.do_rm_samples = rm_samples
-        self.do_rm_features = rm_features
+        self.do_eliminate_minus_999 = eliminate_minus_999
+        self.do_drop_minus_999_features = drop_minus_999_features
         self.do_tune_hyper = tune
         self.do_cross_validate = cross
 
@@ -39,29 +39,23 @@ class Fitter(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     def run(self, data_y, data_x, data_ids, test_x, test_ids):
-        if self.do_rm_features:
-            print('Dropping features...', end=' ', flush=True)
-            data_x = parsers.cut_features(data_x)
+        if self.do_drop_minus_999_features:
+            print('Dropping features containing at least one -999 value...', end=' ', flush=True)
+            data_x = parsers.drop_minus_999_features(data_x)
             print('DONE')
-        if self.do_rm_samples:
-            print('Dropping samples...', end=' ', flush=True)
-            print(data_x.shape)
-            data_y, data_x = parsers.cut_samples(data_y, data_x)
-            print(data_x.shape)
-            print('DONE')
-        if self.do_std:
-            print('Setting -999 to mean...', end=' ', flush=True)
-            data_x = parsers.rm_999(data_x)
+        if self.do_eliminate_minus_999:
+            print('Eliminating -999 values by setting them to feature median...', end=' ', flush=True)
+            data_x = parsers.eliminate_minus_999(data_x)
             print('DONE')
 
         # Build polynomial
         data_x = parsers.build_poly(data_x, self.degree, True)
         # self.mean, self.std = mean, std
 
-        # if self.do_std:
-        #     print('Standardising...', end=' ', flush=True)
-        #     data_x, mean, std = parsers.standardize(data_x)
-        #     print('DONE')
+        if self.do_std:
+            print('Standardising...', end=' ', flush=True)
+            data_x = parsers.standardize(data_x)
+            print('DONE')
 
         # Find a good initial w
         initial_w, _ = impl.ridge_regression(data_y, data_x, lambda_=0.1)
@@ -207,15 +201,16 @@ class GDFitter(Fitter):
             yield v / 10
     
     def _make_predictions(self, w, test_tx, test_ids):
+        if self.do_eliminate_minus_999:
+            test_tx = parsers.eliminate_minus_999(test_tx)
+
+        # augment features
+        test_tx = parsers.build_poly(test_tx, self.degree, True)
+
         if self.do_std:
-            test_tx = parsers.rm_999(test_tx)
+            test_tx = parsers.standardize(test_tx)
 
-        test_tx =  parsers.build_poly(test_tx, self.degree, True)
-
-        # if self.do_std:
-        #     test_tx, _, _ = parsers.standardize(test_tx)
-
-        test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
+        test_tx = parsers.drop_minus_999_features(test_tx) if self.do_drop_minus_999_features else test_tx
         pred_y = parsers.predict_labels(w, test_tx)
 
         loaders.create_csv_submission(test_ids, pred_y, "gd.csv")
@@ -252,15 +247,16 @@ class LeastFitter(Fitter):
         return self._trainer(data_y, data_x, data_ids, train_f=f, cost_f=costs.compute_mse, **args)
 
     def _make_predictions(self, w, test_tx, test_ids):
-        if self.do_std:
-            test_tx= parsers.rm_999(test_tx)
+        if self.do_eliminate_minus_999:
+            test_tx= parsers.eliminate_minus_999(test_tx)
 
+        # augment features
         test_tx =  parsers.build_poly(test_tx, self.degree, True)
 
-        # if self.do_std:
-        #     test_tx, _, _  = parsers.standardize(test_tx)
+        if self.do_std:
+            test_tx = parsers.standardize(test_tx)
 
-        test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
+        test_tx = parsers.drop_minus_999_features(test_tx) if self.do_drop_minus_999_features else test_tx
         pred_y = parsers.predict_labels(w, test_tx)
 
         loaders.create_csv_submission(test_ids, pred_y, "least.csv")
@@ -290,14 +286,16 @@ class RidgeFitter(Fitter):
             yield v
     
     def _make_predictions(self, w, test_tx, test_ids):
-        if self.do_std:
-            test_tx = parsers.rm_999(test_tx)
+        if self.do_eliminate_minus_999:
+            test_tx = parsers.eliminate_minus_999(test_tx)
 
+        # augment features
         test_tx = parsers.build_poly(test_tx, self.degree, True)
-        # if self.do_std:
-        #     test_tx, _, _ = parsers.standardize(test_tx)
 
-        test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
+        if self.do_std:
+            test_tx = parsers.standardize(test_tx)
+
+        test_tx = parsers.drop_minus_999_features(test_tx) if self.do_drop_minus_999_features else test_tx
         pred_y = parsers.predict_labels(w, test_tx)
 
         loaders.create_csv_submission(test_ids, pred_y, "ridge.csv")
@@ -335,14 +333,16 @@ class LogisticFitter(Fitter):
             yield v / 10
 
     def _make_predictions(self, w, test_tx, test_ids):
-        if self.do_std:
-            test_tx = parsers.rm_999(test_tx)
+        if self.do_eliminate_minus_999:
+            test_tx = parsers.eliminate_minus_999(test_tx)
         
+        # augment features
         test_tx = parsers.build_poly(test_tx, self.degree, True)
-        # if self.do_std:
-        #     test_tx, _, _ = parsers.standardize(test_tx)
 
-        test_tx = parsers.cut_features(test_tx) if self.do_rm_features else test_tx
+        if self.do_std:
+            test_tx = parsers.standardize(test_tx)
+
+        test_tx = parsers.drop_minus_999_features(test_tx) if self.do_drop_minus_999_features else test_tx
         pred_y = parsers.predict_labels(w, test_tx, is_logistic=True)
 
         loaders.create_csv_submission(test_ids, pred_y, "logistic.csv")

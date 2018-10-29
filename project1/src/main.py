@@ -48,9 +48,9 @@ Some execution examples:
               help='Tune hyper parameters.')
 @click.option('--cross', is_flag=True,
               help='Do cross validation.')
-@click.option('--rm-samples', is_flag=True,
-              help='Remove samples having at least one -999 value.')
-@click.option('--rm-features', is_flag=True,
+@click.option('--eliminate-minus-999', is_flag=True,
+              help="Eliminate the -999 values per feature, by setting them to each feature's median.")
+@click.option('--drop-minus-999-features', is_flag=True,
               help='Remove features having at least one -999 value.')
 @click.option('--data-path', metavar='PATH',
               help='Directory containing train.csv and test.csv.')
