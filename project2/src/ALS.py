@@ -261,7 +261,7 @@ def matrix_factorization_SGD(train, test):
     rmse = compute_error(test, user_features, item_features, nz_test)
     print("RMSE on test data: {}.".format(rmse))
 
-matrix_factorization_SGD(train, test) 
+#matrix_factorization_SGD(train, test) 
 
 # ----------------------------------------------------------------------------------------
 
