@@ -25,7 +25,12 @@ def create_submission(path, predictions):
             for row, col in zp:
                 r = "r" + str(row+1)
                 c = "c" + str(col+1)
-                writer.writerow({'Id': r+"_"+c, 'Prediction': int(predictions[row,col])})
+                val = int(round(predictions[row,col]))
+                if val > 5:
+                    val = 5
+                elif val < 1:
+                    val = 1
+                writer.writerow({'Id': r+"_"+c, 'Prediction': val})
 
 
 def read_txt(path):
@@ -56,7 +61,7 @@ def preprocess_data(data):
 
     # parse each line
     data = [deal_line(line) for line in data]
-    print(data[:10])
+    #print(data[:10])
 
     # do statistics on the dataset.
     min_row, max_row, min_col, max_col = statistics(data)

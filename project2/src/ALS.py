@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 
 
 from helpers import load_data, preprocess_data
+from helpers import build_index_groups, create_submission
+
 
 path_dataset = "../data/train.csv"
 ratings = load_data(path_dataset)
@@ -112,7 +114,10 @@ def baseline_global_mean(train, test):
     mse = calculate_mse(nonzero_test, global_mean_train)
     rmse = np.sqrt(1.0 * mse / nonzero_test.shape[1])
     print("test RMSE of baseline using the global mean: {v}.".format(v=rmse))
-
+    #print("global mean")
+    #print(global_mean_train)
+    X = np.ones((10000,1000)) * global_mean_train
+    create_submission("../data/GLOBAL_MEAN.csv", X)
 baseline_global_mean(train, test)
 
 # ----------------------------------------------------------------------------------------
@@ -122,6 +127,7 @@ def baseline_user_mean(train, test):
     """baseline method: use the user means as the prediction."""
     mse = 0
     num_items, num_users = train.shape
+    X = np.ones((10000,1000))
 
     for user_index in range(num_users):
         # find the non-zero ratings for each user in the training dataset
@@ -131,6 +137,7 @@ def baseline_user_mean(train, test):
         # calculate the mean if the number of elements is not 0
         if nonzeros_train_ratings.shape[0] != 0:
             user_train_mean = nonzeros_train_ratings.mean()
+            X[:,user_index] = user_train_mean
         else:
             continue
         
@@ -142,6 +149,7 @@ def baseline_user_mean(train, test):
         mse += calculate_mse(nonzeros_test_ratings, user_train_mean)
     rmse = np.sqrt(1.0 * mse / test.nnz)
     print("test RMSE of the baseline using the user mean: {v}.".format(v=rmse))
+    create_submission("../data/MEAN.csv", X)
 
 baseline_user_mean(train, test)
 
@@ -205,7 +213,7 @@ def compute_error(data, user_features, item_features, nz):
     for row, col in nz:
         item_info = item_features[:, row]
         user_info = user_features[:, col]
-        mse += (data[row, col] - user_info.T.dot(item_info)) ** 2
+        mse += (data[row, col] - round(user_info.T.dot(item_info))) ** 2
     return np.sqrt(1.0 * mse / len(nz))
 
 
@@ -314,13 +322,12 @@ def update_item_feature(
 # ----------------------------------------------------------------------------------------
 
 
-from helpers import build_index_groups, create_submission
 
 
 def ALS(train, test):
     """Alternating Least Squares (ALS) algorithm."""
     # define parameters
-    num_features = 10   # K in the lecture notes
+    num_features = 20   # K in the lecture notes
     lambda_user = 0.1
     lambda_item = 0.7
     stop_criterion = 1e-4
