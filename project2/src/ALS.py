@@ -9,18 +9,18 @@ from helpers import load_data, preprocess_data
 
 path_dataset = "../data/train.csv"
 ratings = load_data(path_dataset)
-print(ratings[:10,:10].todense())
-vait = [1,2,4,7,8]
-vaus = [2,4,6,8,9]
-#rat = ratings[vait][:,vaus]
-rat = ratings[vait]
-print(rat.todense()[:10,:10])
-rat = rat[:,vaus]
-print(rat.todense()[:10,:10])
+# print(ratings[:10,:10].todense())
+# vait = [1,2,4,7,8]
+# vaus = [2,4,6,8,9]
+# #rat = ratings[vait][:,vaus]
+# rat = ratings[vait]
+# print(rat.todense()[:10,:10])
+# rat = rat[:,vaus]
+# print(rat.todense()[:10,:10])
 
-print(ratings[vait,vaus].shape)
+# print(ratings[vait,vaus].shape)
 
-print(ratings[vait,vaus].todense())
+# print(ratings[vait,vaus].todense())
 
 
 # ----------------------------------------------------------------------------------------
@@ -88,7 +88,7 @@ def split_data(ratings, num_items_per_user, num_users_per_item,
 from plots import plot_train_test_data
 
 valid_ratings, train, test = split_data(
-        ratings, num_items_per_user, num_users_per_item, min_num_ratings=10, p_test=0.1)
+        ratings, num_items_per_user, num_users_per_item, min_num_ratings=1, p_test=0.1)
 
 #plot_train_test_data(train, test)
 
@@ -314,7 +314,7 @@ def update_item_feature(
 # ----------------------------------------------------------------------------------------
 
 
-from helpers import build_index_groups
+from helpers import build_index_groups, create_submission
 
 
 def ALS(train, test):
@@ -364,10 +364,9 @@ def ALS(train, test):
     nnz_test = list(zip(nnz_row, nnz_col))
     rmse = compute_error(test, user_features, item_features, nnz_test)
     print("test RMSE after running ALS: {v}.".format(v=rmse))
-    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-    print(item_features.shape, user_features.shape)
+
+    # Create Submission
     X = item_features.transpose().dot(user_features)
-    print(X.shape)
     create_submission("../data/ALS.csv", X)
 
 ALS(train, test)    

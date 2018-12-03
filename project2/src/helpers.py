@@ -5,6 +5,8 @@ from itertools import groupby
 
 import numpy as np
 import scipy.sparse as sp
+import csv
+
 
 def create_submission(path, predictions):
     # TODO: Check if there are required movies thet we dsicard as non valid bcs <10 ratings
@@ -54,7 +56,6 @@ def preprocess_data(data):
 
     # parse each line
     data = [deal_line(line) for line in data]
-    print("DATA B4 creating lil")
     print(data[:10])
 
     # do statistics on the dataset.
