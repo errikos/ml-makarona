@@ -320,7 +320,7 @@ from helpers import build_index_groups
 def ALS(train, test):
     """Alternating Least Squares (ALS) algorithm."""
     # define parameters
-    num_features = 20   # K in the lecture notes
+    num_features = 10   # K in the lecture notes
     lambda_user = 0.1
     lambda_item = 0.7
     stop_criterion = 1e-4
@@ -364,5 +364,10 @@ def ALS(train, test):
     nnz_test = list(zip(nnz_row, nnz_col))
     rmse = compute_error(test, user_features, item_features, nnz_test)
     print("test RMSE after running ALS: {v}.".format(v=rmse))
+    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+    print(item_features.shape, user_features.shape)
+    X = item_features.transpose().dot(user_features)
+    print(X.shape)
+    create_submission("../data/ALS.csv", X)
 
 ALS(train, test)    

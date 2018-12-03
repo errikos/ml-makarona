@@ -6,6 +6,25 @@ from itertools import groupby
 import numpy as np
 import scipy.sparse as sp
 
+def create_submission(path, predictions):
+    # TODO: Check if there are required movies thet we dsicard as non valid bcs <10 ratings
+    # load the sample submissionf file in order to know which ratings need to be written to csv
+    path_sample_sub = "../data/submission.csv"
+    submission_data = load_data(path_sample_sub)
+
+    rows, cols = submission_data.nonzero()
+    zp = list(zip(rows, cols))
+    zp.sort(key=lambda tup: tup[1])
+
+    with open(path, 'w') as csvfile:
+            fieldnames = ['Id', 'Prediction']
+            writer = csv.DictWriter(csvfile, delimiter=",", fieldnames=fieldnames, lineterminator = '\n')
+            writer.writeheader()
+            for row, col in zp:
+                r = "r" + str(row+1)
+                c = "c" + str(col+1)
+                writer.writerow({'Id': r+"_"+c, 'Prediction': int(predictions[row,col])})
+
 
 def read_txt(path):
     """read text file from path."""
@@ -35,6 +54,8 @@ def preprocess_data(data):
 
     # parse each line
     data = [deal_line(line) for line in data]
+    print("DATA B4 creating lil")
+    print(data[:10])
 
     # do statistics on the dataset.
     min_row, max_row, min_col, max_col = statistics(data)
