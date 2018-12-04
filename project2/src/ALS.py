@@ -327,9 +327,9 @@ def update_item_feature(
 def ALS(train, test):
     """Alternating Least Squares (ALS) algorithm."""
     # define parameters
-    num_features = 30   # K in the lecture notes
-    lambda_user = 0.1
-    lambda_item = 0.7
+    num_features = 5   # K in the lecture notes
+    lambda_user = 0.05
+    lambda_item = 0.1
     stop_criterion = 1e-4
     change = 1
     error_list = [0, 0]
