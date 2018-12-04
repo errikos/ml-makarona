@@ -98,5 +98,6 @@ def build_index_groups(train):
 
 def calculate_mse(real_label, prediction):
     """calculate MSE."""
-    t = real_label - prediction
+    # Kostas: added int(round())
+    t = real_label - int(round(prediction))
     return 1.0 * t.dot(t.T)

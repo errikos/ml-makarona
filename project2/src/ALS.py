@@ -224,7 +224,7 @@ def matrix_factorization_SGD(train, test):
     """matrix factorization by SGD."""
     # define parameters
     gamma = 0.01
-    num_features = 20   # K in the lecture notes
+    num_features = 10   # K in the lecture notes
     lambda_user = 0.1
     lambda_item = 0.7
     num_epochs = 20     # number of full passes through the train set
@@ -327,7 +327,7 @@ def update_item_feature(
 def ALS(train, test):
     """Alternating Least Squares (ALS) algorithm."""
     # define parameters
-    num_features = 20   # K in the lecture notes
+    num_features = 30   # K in the lecture notes
     lambda_user = 0.1
     lambda_item = 0.7
     stop_criterion = 1e-4
