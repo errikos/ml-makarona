@@ -156,13 +156,11 @@ def calculate_user_similarities(ratings, cache=False, cosine=False, \
 		for user1 in range(ratings.shape[1]):
 
 			r_x = ratings[:, user1]
-			# mean_x_ratings = r_x.sum() / r_x.nonzero()[0].shape[0]
 			mean_x_ratings = r_x.sum() / user_items[user1].shape[0]
 
 			for user2 in range(user1 + 1, ratings.shape[1]):
 
 				r_y = ratings[:, user2]
-				# mean_y_ratings = r_y.sum() / r_y.nonzero()[0].shape[0]
 				mean_y_ratings = r_y.sum() / user_items[user2].shape[0]
 
 				common_items = find_common_items(user_items[user1], \
@@ -208,7 +206,7 @@ def calculate_user_similarities(ratings, cache=False, cosine=False, \
 		return user_similarities(ratings, cosine, use_intersection)
 
 
-def calculate_rating(ratings, sim, item, user):
+def calculate_rating(ratings, user_ratings, similarities, item, user):
 
 	numerator = 0
 	denominator = 0
@@ -216,16 +214,19 @@ def calculate_rating(ratings, sim, item, user):
 	for neighbour in range(ratings.shape[1]):
 		if neighbour != user and ratings[item, neighbour] != 0:
 
-			bias_y = calculate_user_bias(ratings[:, neighbour], item)
-			numerator += sim[user, neighbour] * bias_y
-			denominator += abs(sim[user, neighbour])
+			# bias_y = calculate_user_bias(ratings[:, neighbour], item)
+			bias_y = calculate_user_bias(user_ratings[neighbour], item)
 
-	r_x = ratings[:, user]
+			numerator += similarities[user, neighbour] * bias_y
+			denominator += abs(similarities[user, neighbour])
+
+	# r_x = ratings[:, user]
+	r_x = user_ratings[user]
 	mean_x_ratings = r_x.sum() / r_x.nonzero()[0].shape[0]
 
 	return mean_x_ratings + numerator / denominator
 
-def create_submission(sub_path, ratings, similarities):
+def create_submission(sub_path, ratings, similarities, user_ratings):
 
 	''' Loads the sample submission file in order to know which ratings need 
 		to be written to csv, and returns the final submission file.
@@ -244,9 +245,9 @@ def create_submission(sub_path, ratings, similarities):
 							fieldnames=fieldnames, lineterminator = '\n')
 		writer.writeheader()
 
-		# TODO Run from where we left off!!
 		counter = 0
-		for row, col in zp:
+		# for row, col in zp:  # TODO Bring back
+		for row, col in zp[164:]:  #TODO Remove
 
 			# TODO Remove
 			counter += 1
@@ -254,7 +255,8 @@ def create_submission(sub_path, ratings, similarities):
 
 			r = "r" + str(row + 1)
 			c = "c" + str(col + 1)
-			val = int(round(calculate_rating(ratings, similarities, row, col)))
+			val = int(round(calculate_rating(ratings, user_ratings, \
+											 similarities, row, col)))
 
 			if val > 5:
 				val = 5
@@ -262,12 +264,21 @@ def create_submission(sub_path, ratings, similarities):
 				val = 1
 
 			writer.writerow({'Id': r + "_" + c, 'Prediction': val})
+			csvfile.flush()
 
 
 if __name__ == "__main__":
 	ratings_path = "../data/train.csv"
 	ratings = load_data(ratings_path)
 
+	# Store per user ratings
+	print("Preping...", end="", flush=True)
+	user_ratings = []
+	for user in range(ratings.shape[1]):
+		user_ratings.append(ratings[:, user])
+	print("Done")
+
+	# TODO Pass user_ratings to calculation of user similarities
 	# print("Calculating user similarities...", end="", flush=True)
 	# calculate_user_similarities(ratings, cache=True)
 	# print("Done")
@@ -278,6 +289,6 @@ if __name__ == "__main__":
 	print("Done")
 
 	print("Calculating missing ratings...", end="", flush=True)
-	create_submission("../submissions/sub_user_based.csv", \
-					   ratings, similarities)
+	create_submission("../submissions/sub_user_based.csv", ratings, \
+					   similarities, user_ratings)
 	print("Done")
