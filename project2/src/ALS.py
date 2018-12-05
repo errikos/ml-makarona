@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 
 from helpers import load_data, preprocess_data
 from helpers import build_index_groups, create_submission
+from helpers import calculate_mse
+from plots import plot_raw_data
+
 
 
 path_dataset = "../data/train.csv"
@@ -29,7 +32,6 @@ ratings = load_data(path_dataset)
 
 
 
-from plots import plot_raw_data
 
 num_items_per_user, num_users_per_item = plot_raw_data(ratings)
 
@@ -87,102 +89,10 @@ def split_data(ratings, num_items_per_user, num_users_per_item,
 
 # ----------------------------------------------------------------------------------------
 
-from plots import plot_train_test_data
 
 valid_ratings, train, test = split_data(
         ratings, num_items_per_user, num_users_per_item, min_num_ratings=1, p_test=0.1)
 
-#plot_train_test_data(train, test)
-
-# ----------------------------------------------------------------------------------------
-
-
-from helpers import calculate_mse
-
-def baseline_global_mean(train, test):
-    """baseline method: use the global mean."""
-    # find the non zero ratings in the train
-    nonzero_train = train[train.nonzero()]
-
-    # calculate the global mean
-    global_mean_train = nonzero_train.mean()
-
-    # find the non zero ratings in the test
-    nonzero_test = test[test.nonzero()].todense()
-
-    # predict the ratings as global mean
-    mse = calculate_mse(nonzero_test, global_mean_train)
-    rmse = np.sqrt(1.0 * mse / nonzero_test.shape[1])
-    print("test RMSE of baseline using the global mean: {v}.".format(v=rmse))
-    #print("global mean")
-    #print(global_mean_train)
-    X = np.ones((10000,1000)) * global_mean_train
-    create_submission("../data/GLOBAL_MEAN.csv", X)
-baseline_global_mean(train, test)
-
-# ----------------------------------------------------------------------------------------
-
-
-def baseline_user_mean(train, test):
-    """baseline method: use the user means as the prediction."""
-    mse = 0
-    num_items, num_users = train.shape
-    X = np.ones((10000,1000))
-
-    for user_index in range(num_users):
-        # find the non-zero ratings for each user in the training dataset
-        train_ratings = train[:, user_index]
-        nonzeros_train_ratings = train_ratings[train_ratings.nonzero()]
-        
-        # calculate the mean if the number of elements is not 0
-        if nonzeros_train_ratings.shape[0] != 0:
-            user_train_mean = nonzeros_train_ratings.mean()
-            X[:,user_index] = user_train_mean
-        else:
-            continue
-        
-        # find the non-zero ratings for each user in the test dataset
-        test_ratings = test[:, user_index]
-        nonzeros_test_ratings = test_ratings[test_ratings.nonzero()].todense()
-        
-        # calculate the test error 
-        mse += calculate_mse(nonzeros_test_ratings, user_train_mean)
-    rmse = np.sqrt(1.0 * mse / test.nnz)
-    print("test RMSE of the baseline using the user mean: {v}.".format(v=rmse))
-    create_submission("../data/MEAN.csv", X)
-
-baseline_user_mean(train, test)
-
-
-# ----------------------------------------------------------------------------------------
-
-
-def baseline_item_mean(train, test):
-    """baseline method: use item means as the prediction."""
-    mse = 0
-    num_items, num_users = train.shape
-    
-    for item_index in range(num_items):
-        # find the non-zero ratings for each item in the training dataset
-        train_ratings = train[item_index, :]
-        nonzeros_train_ratings = train_ratings[train_ratings.nonzero()]
-
-        # calculate the mean if the number of elements is not 0
-        if nonzeros_train_ratings.shape[0] != 0:
-            item_train_mean = nonzeros_train_ratings.mean()
-        else:
-            continue
-        
-        # find the non-zero ratings for each movie in the test dataset
-        test_ratings = test[item_index, :]
-        nonzeros_test_ratings = test_ratings[test_ratings.nonzero()].todense()
-        
-        # calculate the test error 
-        mse += calculate_mse(nonzeros_test_ratings, item_train_mean)
-    rmse = np.sqrt(1.0 * mse / test.nnz)
-    print("test RMSE of the baseline using the item mean: {v}.".format(v=rmse))
-    
-baseline_item_mean(train, test)
 
 # ----------------------------------------------------------------------------------------
 
@@ -324,12 +234,12 @@ def update_item_feature(
 
 
 
-def ALS(train, test):
+def ALS(train, test, K, lambda_u, lambda_i):
     """Alternating Least Squares (ALS) algorithm."""
     # define parameters
-    num_features = 5   # K in the lecture notes
-    lambda_user = 0.05
-    lambda_item = 0.1
+    num_features = K   # K in the lecture notes
+    lambda_user = lambda_u #
+    lambda_item = lambda_i
     stop_criterion = 1e-4
     change = 1
     error_list = [0, 0]
@@ -351,7 +261,6 @@ def ALS(train, test):
     #print(nz_user_itemindices[:10])
 
     # run ALS
-    print("\nstart the ALS algorithm...")
     while change > stop_criterion:
         # update user feature & item feature
         user_features = update_user_feature(
@@ -370,10 +279,45 @@ def ALS(train, test):
     nnz_row, nnz_col = test.nonzero()
     nnz_test = list(zip(nnz_row, nnz_col))
     rmse = compute_error(test, user_features, item_features, nnz_test)
-    print("test RMSE after running ALS: {v}.".format(v=rmse))
+    print("test RMSE after running ALS({K} {lamu} {lami}): {v}.".format(K=K, 
+    													lamu=lambda_u, lami=lambda_i,
+    													v=rmse))
 
+    return rmse, user_features, item_features
     # Create Submission
-    X = item_features.transpose().dot(user_features)
-    create_submission("../data/ALS.csv", X)
+    
 
-ALS(train, test)    
+
+kappas = range(4,31,2)
+lambda_u = range(1,50,5)
+lambda_i = range(1,50,5)
+# kappas = range(5,6,1)
+# lambda_u = range(1,2,1)
+# lambda_i = range(1,2,1)
+min_err = 100
+best_config = (0,0,0)
+print("\nTuning lambdas")
+# tune lambdas (separately from K. not the best but faster)
+for u,i in zip(lambda_u, lambda_i):
+	test_err, W, Z = ALS(train, test, 10, u/100, i/100)    
+	if test_err < min_err:
+		min_err = test_err
+		best_config = (10, u, i)
+
+# tune K
+print("\nTuning K")
+min_err = 100
+best_W_Z = (None, None)
+for k in kappas:
+	test_err, W, Z = ALS(train, test, k, best_config[1]/100, best_config[2]/100)
+	if test_err < min_err:
+		min_err = test_err
+		best_config = (k, best_config[1], best_config[2])
+		best_W_Z = (W,Z)
+
+print("Best parameters are: K={k}, lambda_u={u}, lambda_i={i}. Test error={er}".format(
+								k=best_config[0], u=best_config[1], i=best_config[2],
+								er=min_err))
+
+X = best_W_Z[1].transpose().dot(best_W_Z[0])
+create_submission("../data/ALS.csv", X)
