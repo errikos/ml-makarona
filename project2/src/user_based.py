@@ -34,9 +34,9 @@ def parse_similarities(path, dimension):
 
 	def deal_line(line):
 		u1, u2, sim = line.split(',')
-		return int(u1), int(u2), double(sim)
+		return int(u1), int(u2), float(sim)
 
-	data = [deal_line(line) for line in read_txt(path)]
+	data = [deal_line(line) for line in read_txt(path)[1:]]
 
 	similarities = sp.lil_matrix((dimension, dimension))
 	for u1, u2, sim in data:
@@ -213,7 +213,7 @@ def calculate_rating(ratings, sim, item, user):
 	numerator = 0
 	denominator = 0
 
-	for neighbour in ratings.shape[1]:
+	for neighbour in range(ratings.shape[1]):
 		if neighbour != user and ratings[item, neighbour] != 0:
 
 			bias_y = calculate_user_bias(ratings[:, neighbour], item)
@@ -224,6 +224,45 @@ def calculate_rating(ratings, sim, item, user):
 	mean_x_ratings = r_x.sum() / r_x.nonzero()[0].shape[0]
 
 	return mean_x_ratings + numerator / denominator
+
+def create_submission(sub_path, ratings, similarities):
+
+	''' Loads the sample submission file in order to know which ratings need 
+		to be written to csv, and returns the final submission file.
+	'''
+	path_sample_sub = "../data/submission.csv"
+	sample_sub_data = load_data(path_sample_sub)
+
+	rows, cols = sample_sub_data.nonzero()
+	zp = list(zip(rows, cols))
+	zp.sort(key=lambda tup: tup[1])
+
+	with open(sub_path, 'w') as csvfile:
+
+		fieldnames = ['Id', 'Prediction']
+		writer = csv.DictWriter(csvfile, delimiter=",", \
+							fieldnames=fieldnames, lineterminator = '\n')
+		writer.writeheader()
+
+		# TODO Run from where we left off!!
+		counter = 0
+		for row, col in zp:
+
+			# TODO Remove
+			counter += 1
+			print(counter)
+
+			r = "r" + str(row + 1)
+			c = "c" + str(col + 1)
+			val = int(round(calculate_rating(ratings, similarities, row, col)))
+
+			if val > 5:
+				val = 5
+			elif val < 1:
+				val = 1
+
+			writer.writerow({'Id': r + "_" + c, 'Prediction': val})
+
 
 if __name__ == "__main__":
 	ratings_path = "../data/train.csv"
@@ -236,8 +275,9 @@ if __name__ == "__main__":
 	print("Extracting cached user similarities...", end="", flush=True)
 	similarities = parse_similarities("../data/pearson_sim_intersection.csv",\
 									   ratings.shape[1])
-
+	print("Done")
 
 	print("Calculating missing ratings...", end="", flush=True)
-	print(calculate_rating(ratings, sim, 36, 0))
+	create_submission("../submissions/sub_user_based.csv", \
+					   ratings, similarities)
 	print("Done")
