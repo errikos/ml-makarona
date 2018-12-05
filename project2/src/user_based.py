@@ -155,21 +155,21 @@ def calculate_user_similarities(ratings, cache=False, cosine=False, \
 
 		for user1 in range(ratings.shape[1]):
 
-			print("user1: ", user1)
-
 			r_x = ratings[:, user1]
-			mean_x_ratings = r_x.sum() / r_x.nonzero()[0].shape[0]
+			# mean_x_ratings = r_x.sum() / r_x.nonzero()[0].shape[0]
+			mean_x_ratings = r_x.sum() / user_items[user1].shape[0]
 
 			for user2 in range(user1 + 1, ratings.shape[1]):
 
 				r_y = ratings[:, user2]
-				mean_y_ratings = r_y.sum() / r_y.nonzero()[0].shape[0]
+				# mean_y_ratings = r_y.sum() / r_y.nonzero()[0].shape[0]
+				mean_y_ratings = r_y.sum() / user_items[user2].shape[0]
 
 				common_items = find_common_items(user_items[user1], \
 												 user_items[user2], \
 												 use_intersection)
 
-				if common_items != set():
+				if common_items:
 
 					if cosine:
 						corr = cosine_sim(r_x, r_y, common_items)
@@ -214,12 +214,11 @@ def calculate_rating(ratings, sim, item, user):
 	denominator = 0
 
 	for neighbour in ratings.shape[1]:
-		if ratings[item, neighbour] != 0:
+		if neighbour != user and ratings[item, neighbour] != 0:
 
 			bias_y = calculate_user_bias(ratings[:, neighbour], item)
 			numerator += sim[user, neighbour] * bias_y
 			denominator += abs(sim[user, neighbour])
-
 
 	r_x = ratings[:, user]
 	mean_x_ratings = r_x.sum() / r_x.nonzero()[0].shape[0]
@@ -227,19 +226,18 @@ def calculate_rating(ratings, sim, item, user):
 	return mean_x_ratings + numerator / denominator
 
 if __name__ == "__main__":
-	path_dataset = "../data/train.csv"
-	ratings = load_data(path_dataset)
+	ratings_path = "../data/train.csv"
+	ratings = load_data(ratings_path)
 
 	# print("Calculating user similarities...", end="", flush=True)
-	print("Calculating user similarities...")
-	calculate_user_similarities(ratings, cache=True)
+	# calculate_user_similarities(ratings, cache=True)
+	# print("Done")
+
+	print("Extracting cached user similarities...", end="", flush=True)
+	similarities = parse_similarities("../data/pearson_sim_intersection.csv",\
+									   ratings.shape[1])
+
+
+	print("Calculating missing ratings...", end="", flush=True)
+	print(calculate_rating(ratings, sim, 36, 0))
 	print("Done")
-
-	# print("Caching similarities in file pearson_similarities.csv...",\
-	# 		 end="", flush=True)
-	# cache_similarities("../data/pearson_similarities.csv", sim.todense())
-	# print("Done")
-
-	# print("Calculating missing ratings...", end="", flush=True)
-	# print(calculate_rating(ratings, sim, 36, 0))
-	# print("Done")
