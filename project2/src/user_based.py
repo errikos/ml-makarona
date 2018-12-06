@@ -44,121 +44,136 @@ def parse_similarities(path, dimension):
 	return similarities
 
 
-# TODO Remove? 
-# def calculate_user_bias(user_ratings, item):
-# 	'''
-# 		user_ratings: A particular user's ratings, as np.array
-# 	'''
+def calculate_user_similarities(ratings_dense, user_mean_ratings, \
+								cache=False, cosine=False, \
+								use_intersection=True, \
+								min_common_percentage=0):
 
-# 	mean_user_ratings = np.sum(user_ratings) / \
-# 						len(np.nonzero(user_ratings)[0])
-# 	user_bias = user_ratings[item] - mean_user_ratings
+	def pearson_corr(ratings_dense, user_mean_rating, common_items, \
+					 user1, user2):
 
-# 	return user_bias
+		numerator = 0
+		denominator1 = 0
+		denominator2 = 0
 
+		for item in common_items:
 
-def pearson_corr(r_x, r_y, common_items, mean_x_ratings, mean_y_ratings):
+			bias_x = ratings_dense[item, user1] - user_mean_ratings[user1]
+			bias_y = ratings_dense[item, user2] - user_mean_ratings[user2]
+			
+			numerator += bias_x * bias_y
+			denominator1 += bias_x * bias_x
+			denominator2 += bias_y * bias_y
 
-	numerator = 0
-	denominator1 = 0
-	denominator2 = 0
+		denominator = math.sqrt(denominator1) * math.sqrt(denominator2)
 
-	for i in common_items:
-		bias_x = r_x[i, 0] - mean_x_ratings
-		bias_y = r_y[i, 0] - mean_y_ratings
-		
-		numerator += bias_x * bias_y
-		denominator1 += bias_x * bias_x
-		denominator2 += bias_y * bias_y
-
-	denominator = math.sqrt(denominator1) * math.sqrt(denominator2)
-
-	return numerator / denominator
+		return numerator / denominator
 
 
-def cosine_sim(r_x, r_y, common_items):
+	def cosine_sim(ratings_dense, common_items, user1, user2):
 
-	numerator = 0
-	denominator1 = 0
-	denominator2 = 0
+		numerator = 0
+		denominator1 = 0
+		denominator2 = 0
 
-	for i in common_items:
-		numerator += r_x[i, 0] * r_y[i, 0]
-		denominator1 += r_x[i, 0] * r_x[i, 0]
-		denominator2 += r_y[i, 0] * r_y[i, 0]
+		for item in common_items:
 
-	denominator = math.sqrt(denominator1) * math.sqrt(denominator2)
+			r_item_user1 = ratings_dense[item, user1]
+			r_item_user2 = ratings_dense[item, user2]
 
-	return numerator / denominator
+			numerator += r_item_user1 * r_item_user2
+			denominator1 += r_item_user1 * r_item_user1
+			denominator2 += r_item_user2 * r_item_user2
 
+		denominator = math.sqrt(denominator1) * math.sqrt(denominator2)
 
-def find_common_items(user1_items, user2_items, use_intersection=True):
-
-	if use_intersection == False:
-
-		zipped = itertools.zip_longest(user1_items, user2_items, fillvalue=-1)
-
-		for i, j in zipped:
-			if i != j:
-				return set()
-
-		return set(user1_items)
-
-	return set(user1_items).intersection(set(user2_items))
+		return numerator / denominator
 
 
-def calculate_user_similarities(ratings, cache=False, cosine=False, \
-								use_intersection=True):
+	def find_common_items(user1_items, user2_items, use_intersection=True):
 
-	def user_similarities(ratings, cosine, use_intersection, \
-						  writer=None, csvfile=None):
+		if use_intersection == False:
+
+			zipped = itertools.zip_longest(user1_items, user2_items, \
+										   fillvalue=-1)
+
+			for i, j in zipped:
+				if i != j:
+					return set()
+
+			return set(user1_items)
+
+		return set(user1_items).intersection(set(user2_items))
+
+
+	def user_similarities(ratings_dense, user_mean_ratings, cosine, \
+					  	  use_intersection, writer=None, csvfile=None, \
+					  	  min_common_percentage=0):
+
+		num_users = ratings_dense.shape[1]
 
 		user_items = []
-		for user in range(ratings.shape[1]):
-			user_items.append(ratings[:, user].nonzero()[0])
+		for user in range(num_users):
+			user_items.append(np.nonzero(ratings_dense[:, user])[0])
 
 		if writer is None:
-			sim = sp.lil_matrix((ratings.shape[1], ratings.shape[1]))
+			similarities = np.zeros((num_users, num_users))
 
-		for user1 in range(ratings.shape[1]):
+		# TODO Remove?
+		found_neighbour = []
+		for user in range(num_users):
+			found_neighbour.append(False)
 
-			r_x = ratings[:, user1]
-			mean_x_ratings = r_x.sum() / user_items[user1].shape[0]
+		for user1 in range(num_users):
 
-			for user2 in range(user1 + 1, ratings.shape[1]):
+			print("user1: ", user1)
 
-				r_y = ratings[:, user2]
-				mean_y_ratings = r_y.sum() / user_items[user2].shape[0]
+			for user2 in range(user1 + 1, num_users):
 
 				common_items = find_common_items(user_items[user1], \
 												 user_items[user2], \
 												 use_intersection)
 
-				if common_items:
+				min_items = min(len(user_items[user1]), \
+								len(user_items[user2]))
+
+				# If the two users don't have common items, or their
+				# common items are not at least as many as some threshold,
+				# we don't calculate their similarity. 
+				if common_items and \
+				   len(common_items) >= min_items * min_common_percentage:
+
+					found_neighbour[user1] = True
+					found_neighbour[user2] = True
 
 					if cosine:
-						corr = cosine_sim(r_x, r_y, common_items)
+						corr = cosine_sim(ratings_dense, common_items, \
+										  user1, user2)
 					else:
-						corr = pearson_corr(r_x, r_y, common_items, \
-											mean_x_ratings, mean_y_ratings)
+						corr = pearson_corr(ratings_dense, user_mean_ratings, \
+											common_items, user1, user2)
 
 					if writer is None:	
-						sim[user1, user2] = corr
-						sim[user2, user1] = corr
+						similarities[user1, user2] = corr
+						similarities[user2, user1] = corr
 					else:
 						writer.writerow({'User1': user1, 'User2': user2, \
 										 'Similarity': corr})
 						writer.writerow({'User1': user2, 'User2': user1, \
 										 'Similarity': corr})
-						csvfile.flush()
+						# csvfile.flush()
+
+			# TODO Remove?
+			if found_neighbour[user1] == False:
+				print("User " , user1 , " without any neighbours!")
 
 		if writer is None:
-			return sim
+			return similarities
 
 	if cache:
 
 		if use_intersection:
-			path = "../data/pearson_sim_intersection.csv"
+			path = "../data/pearson_sim_intersection_0.3.csv"
 		else:
 			path = "../data/pearson_sim.csv"
 
@@ -168,9 +183,13 @@ def calculate_user_similarities(ratings, cache=False, cosine=False, \
 								fieldnames=fieldnames, lineterminator = '\n')
 		writer.writeheader()
 
-		user_similarities(ratings, cosine, use_intersection, writer, csvfile)
+		user_similarities(ratings_dense, user_mean_ratings, cosine, \
+						  use_intersection, writer, csvfile, \
+						  min_common_percentage)
 	else:
-		return user_similarities(ratings, cosine, use_intersection)
+		return user_similarities(ratings_dense, user_mean_ratings, \
+								 cosine, use_intersection, \
+								 min_common_percentage)
 
 
 def create_submission(sub_path, ratings_dense, similarities, \
@@ -188,17 +207,12 @@ def create_submission(sub_path, ratings_dense, similarities, \
 		for neighbour in range(num_users):
 			if neighbour != user and ratings_dense[item, neighbour] != 0:
 
-				# bias_y = calculate_user_bias(ratings_dense[:, neighbour], item)
 				bias_y = ratings_dense[item, neighbour] - \
 						 user_mean_ratings[neighbour]
 
 				numerator += similarities[user, neighbour] * bias_y
 				denominator += abs(similarities[user, neighbour])
 
-		# r_x = ratings_dense[:, user]
-		# mean_x_ratings = np.sum(r_x) / len(np.nonzero(r_x)[0])
-
-		# return mean_x_ratings + numerator / denominator
 		return user_mean_ratings[user] + numerator / denominator
 
 
@@ -220,8 +234,7 @@ def create_submission(sub_path, ratings_dense, similarities, \
 		num_users = ratings_dense.shape[1]
 
 		counter = 0 #TODO Remove
-		for row, col in zp:  # TODO Bring back
-		# for row, col in zp[164:]:  #TODO Remove
+		for row, col in zp:
 
 			# TODO Remove
 			counter += 1
@@ -239,37 +252,39 @@ def create_submission(sub_path, ratings_dense, similarities, \
 				val = 1
 
 			writer.writerow({'Id': r + "_" + c, 'Prediction': val})
-			csvfile.flush()
+			# csvfile.flush()
 
 
 if __name__ == "__main__":
 
 	ratings_path = "../data/train.csv"
-	ratings = load_data(ratings_path, sparse_matrix=False)
+	ratings_dense = load_data(ratings_path, sparse_matrix=False)
+	num_users = ratings_dense.shape[1]
 
 	# Calculate the mean of each user's ratings and store it
 	print("Prepping...", end="", flush=True)
 	user_mean_ratings = []
-	for user in range(ratings.shape[1]):
-		user_ratings = ratings[:, user]
+	for user in range(num_users):
+		user_ratings = ratings_dense[:, user]
 		user_mean_ratings.append(np.sum(user_ratings) / \
 								 len(np.nonzero(user_ratings)[0]))
 	print("Done")
 
-	# TODO Pass ratings_dense to calculation of user similarities and 
-	# make appropriate changes?
-
+	# Calculate user similarities
+	similarities_path = "../data/pearson_sim_intersection_0.3.csv"
 	# print("Calculating user similarities...", end="", flush=True)
-	# calculate_user_similarities(ratings, cache=True)
+	# print("Calculating user similarities...")
+	# calculate_user_similarities(ratings_dense, user_mean_ratings, \
+	# 							cache=True, min_common_percentage=0.3)
 	# print("Done")
 
 	print("Extracting cached user similarities...", end="", flush=True)
-	similarities = parse_similarities("../data/pearson_sim_intersection.csv",\
-									   ratings.shape[1])
+	similarities = parse_similarities(similarities_path, num_users)
 	print("Done")
 
+	submission_path = "../submissions/sub_user_based_inter_0.3.csv"
 	# print("Calculating missing ratings...", end="", flush=True)
 	print("Calculating missing ratings...")
-	create_submission("../submissions/sub_user_based.csv", ratings, \
-					   similarities, user_mean_ratings)
+	create_submission(submission_path, ratings_dense, similarities, \
+					  user_mean_ratings)
 	print("Done")
