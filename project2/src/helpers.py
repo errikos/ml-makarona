@@ -39,13 +39,16 @@ def read_txt(path):
         return f.read().splitlines()
 
 
-def load_data(path_dataset):
-    """Load data in text format, one rating per line, as in the kaggle competition."""
+def load_data(path_dataset, sparse_matrix=True):
+    '''
+        Load data in text format, one rating per line, and store in a
+        sparse matrix or np.array 
+    '''
     data = read_txt(path_dataset)[1:]
-    return preprocess_data(data)
+    return preprocess_data(data, sparse_matrix)
 
 
-def preprocess_data(data):
+def preprocess_data(data, sparse_matrix=True):
     """preprocessing the text data, conversion to numerical array format."""
     def deal_line(line):
         pos, rating = line.split(',')
@@ -68,7 +71,11 @@ def preprocess_data(data):
     # print("number of items: {}, number of users: {}".format(max_row, max_col))
 
     # build rating matrix.
-    ratings = sp.lil_matrix((max_row, max_col))
+    if sparse_matrix:
+        ratings = sp.lil_matrix((max_row, max_col))
+    else:
+        ratings = np.zeros((max_row, max_col))
+
     for row, col, rating in data:
         ratings[row - 1, col - 1] = rating
     return ratings

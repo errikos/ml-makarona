@@ -31,26 +31,30 @@ def parse_similarities(path, dimension):
 
 		returns: lil matrix of similarities
 	'''
-
 	def deal_line(line):
 		u1, u2, sim = line.split(',')
 		return int(u1), int(u2), float(sim)
 
 	data = [deal_line(line) for line in read_txt(path)[1:]]
 
-	similarities = sp.lil_matrix((dimension, dimension))
+	similarities = np.zeros((dimension, dimension))
 	for u1, u2, sim in data:
 		similarities[u1, u2] = sim
 
 	return similarities
 
 
-def calculate_user_bias(r_user, item):
+# TODO Remove? 
+# def calculate_user_bias(user_ratings, item):
+# 	'''
+# 		user_ratings: A particular user's ratings, as np.array
+# 	'''
 
-	mean_user_ratings = r_user.sum() / r_user.nonzero()[0].shape[0]
-	user_bias = r_user[item, 0] - mean_user_ratings
+# 	mean_user_ratings = np.sum(user_ratings) / \
+# 						len(np.nonzero(user_ratings)[0])
+# 	user_bias = user_ratings[item] - mean_user_ratings
 
-	return user_bias
+# 	return user_bias
 
 
 def pearson_corr(r_x, r_y, common_items, mean_x_ratings, mean_y_ratings):
@@ -101,43 +105,6 @@ def find_common_items(user1_items, user2_items, use_intersection=True):
 		return set(user1_items)
 
 	return set(user1_items).intersection(set(user2_items))
-
-
-# TODO Remove? 
-# def calculate_user_similarities(ratings, calculate_all=False, \
-# 								cosine=False, cache=False):
-
-# 	user_items = []
-# 	for user in range(ratings.shape[1]):
-# 		user_items.append(ratings[:, user].nonzero()[0])
-
-# 	sim = sp.lil_matrix((ratings.shape[1], ratings.shape[1]))
-# 	for user1 in range(ratings.shape[1]):
-
-# 		print("user1: ", user1)
-
-# 		r_x = ratings[:, user1]
-# 		mean_x_ratings = r_x.sum() / r_x.nonzero()[0].shape[0]
-
-# 		for user2 in range(user1 + 1, ratings.shape[1]):
-
-# 			r_y = ratings[:, user2]
-# 			mean_y_ratings = r_y.sum() / r_y.nonzero()[0].shape[0]
-
-# 			common_items = find_common_items(user_items[user1], \
-# 											user_items[user2], calculate_all)
-
-# 			if common_items != set():
-
-# 				if cosine:
-# 					corr = cosine_sim(r_x, r_y, common_items)
-# 				else:
-# 					corr = pearson_corr(r_x, r_y, common_items, \
-# 										mean_x_ratings, mean_y_ratings)
-# 				sim[user1, user2] = corr
-# 				sim[user2, user1] = corr
-
-# 	return sim
 
 
 def calculate_user_similarities(ratings, cache=False, cosine=False, \
@@ -206,37 +173,42 @@ def calculate_user_similarities(ratings, cache=False, cosine=False, \
 		return user_similarities(ratings, cosine, use_intersection)
 
 
-def calculate_rating(ratings, user_ratings, similarities, item, user):
-
-	numerator = 0
-	denominator = 0
-
-	for neighbour in range(ratings.shape[1]):
-		if neighbour != user and ratings[item, neighbour] != 0:
-
-			# bias_y = calculate_user_bias(ratings[:, neighbour], item)
-			bias_y = calculate_user_bias(user_ratings[neighbour], item)
-
-			numerator += similarities[user, neighbour] * bias_y
-			denominator += abs(similarities[user, neighbour])
-
-	# r_x = ratings[:, user]
-	r_x = user_ratings[user]
-	mean_x_ratings = r_x.sum() / r_x.nonzero()[0].shape[0]
-
-	return mean_x_ratings + numerator / denominator
-
-def create_submission(sub_path, ratings, similarities, user_ratings):
+def create_submission(sub_path, ratings_dense, similarities, \
+					  user_mean_ratings):
 
 	''' Loads the sample submission file in order to know which ratings need 
 		to be written to csv, and returns the final submission file.
 	'''
-	path_sample_sub = "../data/submission.csv"
-	sample_sub_data = load_data(path_sample_sub)
+	def calculate_rating(num_users, ratings_dense, similarities, \
+					 	 user_mean_ratings, item, user):
 
-	rows, cols = sample_sub_data.nonzero()
+		numerator = 0
+		denominator = 0
+
+		for neighbour in range(num_users):
+			if neighbour != user and ratings_dense[item, neighbour] != 0:
+
+				# bias_y = calculate_user_bias(ratings_dense[:, neighbour], item)
+				bias_y = ratings_dense[item, neighbour] - \
+						 user_mean_ratings[neighbour]
+
+				numerator += similarities[user, neighbour] * bias_y
+				denominator += abs(similarities[user, neighbour])
+
+		# r_x = ratings_dense[:, user]
+		# mean_x_ratings = np.sum(r_x) / len(np.nonzero(r_x)[0])
+
+		# return mean_x_ratings + numerator / denominator
+		return user_mean_ratings[user] + numerator / denominator
+
+
+	path_sample_sub = "../data/submission.csv"
+	sample_sub_data = load_data(path_sample_sub, sparse_matrix=False)
+
+	# rows, cols = sample_sub_data.nonzero()
+	rows, cols = np.nonzero(sample_sub_data)
 	zp = list(zip(rows, cols))
-	zp.sort(key=lambda tup: tup[1])
+	zp.sort(key = lambda tup: tup[1])
 
 	with open(sub_path, 'w') as csvfile:
 
@@ -245,9 +217,11 @@ def create_submission(sub_path, ratings, similarities, user_ratings):
 							fieldnames=fieldnames, lineterminator = '\n')
 		writer.writeheader()
 
-		counter = 0
-		# for row, col in zp:  # TODO Bring back
-		for row, col in zp[164:]:  #TODO Remove
+		num_users = ratings_dense.shape[1]
+
+		counter = 0 #TODO Remove
+		for row, col in zp:  # TODO Bring back
+		# for row, col in zp[164:]:  #TODO Remove
 
 			# TODO Remove
 			counter += 1
@@ -255,8 +229,9 @@ def create_submission(sub_path, ratings, similarities, user_ratings):
 
 			r = "r" + str(row + 1)
 			c = "c" + str(col + 1)
-			val = int(round(calculate_rating(ratings, user_ratings, \
-											 similarities, row, col)))
+			val = int(round(calculate_rating(num_users, ratings_dense, \
+											 similarities, user_mean_ratings, \
+						    				 row, col)))
 
 			if val > 5:
 				val = 5
@@ -268,17 +243,22 @@ def create_submission(sub_path, ratings, similarities, user_ratings):
 
 
 if __name__ == "__main__":
-	ratings_path = "../data/train.csv"
-	ratings = load_data(ratings_path)
 
-	# Store per user ratings
-	print("Preping...", end="", flush=True)
-	user_ratings = []
+	ratings_path = "../data/train.csv"
+	ratings = load_data(ratings_path, sparse_matrix=False)
+
+	# Calculate the mean of each user's ratings and store it
+	print("Prepping...", end="", flush=True)
+	user_mean_ratings = []
 	for user in range(ratings.shape[1]):
-		user_ratings.append(ratings[:, user])
+		user_ratings = ratings[:, user]
+		user_mean_ratings.append(np.sum(user_ratings) / \
+								 len(np.nonzero(user_ratings)[0]))
 	print("Done")
 
-	# TODO Pass user_ratings to calculation of user similarities
+	# TODO Pass ratings_dense to calculation of user similarities and 
+	# make appropriate changes?
+
 	# print("Calculating user similarities...", end="", flush=True)
 	# calculate_user_similarities(ratings, cache=True)
 	# print("Done")
@@ -288,7 +268,8 @@ if __name__ == "__main__":
 									   ratings.shape[1])
 	print("Done")
 
-	print("Calculating missing ratings...", end="", flush=True)
+	# print("Calculating missing ratings...", end="", flush=True)
+	print("Calculating missing ratings...")
 	create_submission("../submissions/sub_user_based.csv", ratings, \
-					   similarities, user_ratings)
+					   similarities, user_mean_ratings)
 	print("Done")
