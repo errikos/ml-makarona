@@ -13,7 +13,7 @@ from plots import plot_raw_data
 
 
 path_dataset = "../data/train.csv"
-ratings = load_data(path_dataset)
+ratings = load_data(path_dataset, sparse_matrix=False)
 # print(ratings[:10,:10].todense())
 # vait = [1,2,4,7,8]
 # vaus = [2,4,6,8,9]
@@ -22,9 +22,7 @@ ratings = load_data(path_dataset)
 # print(rat.todense()[:10,:10])
 # rat = rat[:,vaus]
 # print(rat.todense()[:10,:10])
-
 # print(ratings[vait,vaus].shape)
-
 # print(ratings[vait,vaus].todense())
 
 
@@ -59,20 +57,24 @@ def split_data(ratings, num_items_per_user, num_users_per_item,
     
     # init
     num_rows, num_cols = valid_ratings.shape
-    train = sp.lil_matrix((num_rows, num_cols))
-    test = sp.lil_matrix((num_rows, num_cols))
-    
+    train = np.zeros((num_rows, num_cols))
+    test = np.zeros((num_rows, num_cols))
     print("the shape of original ratings. (# of row, # of col): {}".format(
         ratings.shape))
     print("the shape of valid ratings. (# of row, # of col): {}".format(
         (num_rows, num_cols)))
+
 
     nz_items, nz_users = valid_ratings.nonzero()
     
     # split the data
     for user in set(nz_users):
         # randomly select a subset of ratings
-        row, col = valid_ratings[:, user].nonzero()
+        
+        row = valid_ratings[:, user].nonzero()
+        # TODO: row,col = ... doesn't work :/ 
+        row = row[0]
+        
         selects = np.random.choice(row, size=int(len(row) * p_test))
         residual = list(set(row) - set(selects))
 
@@ -82,9 +84,9 @@ def split_data(ratings, num_items_per_user, num_users_per_item,
         # add to test set
         test[selects, user] = valid_ratings[selects, user]
 
-    print("Total number of nonzero elements in origial data:{v}".format(v=ratings.nnz))
-    print("Total number of nonzero elements in train data:{v}".format(v=train.nnz))
-    print("Total number of nonzero elements in test data:{v}".format(v=test.nnz))
+    print("Total number of nonzero elements in origial data:{v}".format(v=np.count_nonzero(ratings)))
+    print("Total number of nonzero elements in train data:{v}".format(v=np.count_nonzero(train)))
+    print("Total number of nonzero elements in test data:{v}".format(v=np.count_nonzero(test)))
     return valid_ratings, train, test
 
 # ----------------------------------------------------------------------------------------
@@ -99,20 +101,19 @@ valid_ratings, train, test = split_data(
 def init_MF(train, num_features):
     """init the parameter for matrix factorization."""
         
-    num_item, num_user = train.get_shape()
-
+    num_item, num_user = train.shape
     user_features = np.random.rand(num_features, num_user)
     item_features = np.random.rand(num_features, num_item)
 
     # start by item features.
     # return a vector of how many movies each user has rated
-    item_nnz = train.getnnz(axis=1)
+    item_nnz = np.count_nonzero(train, axis=1)
     item_sum = train.sum(axis=1)
-
+    rint(len(item_nnz), len(item_sum))
     for ind in range(num_item):
         # each column of item_features is the mean. why for the first line only
         # it's like it says: for k=0 we have an initialization
-        item_features[0, ind] = item_sum[ind, 0] / item_nnz[ind]
+        item_features[0, ind] = item_sum[ind] / item_nnz[ind]
     return user_features, item_features
 
 # ----------------------------------------------------------------------------------------
@@ -240,7 +241,7 @@ def ALS(train, test, K, lambda_u, lambda_i):
     num_features = K   # K in the lecture notes
     lambda_user = lambda_u #
     lambda_item = lambda_i
-    stop_criterion = 1e-4
+    stop_criterion = 1e-5
     change = 1
     error_list = [0, 0]
     
@@ -251,7 +252,7 @@ def ALS(train, test, K, lambda_u, lambda_i):
     user_features, item_features = init_MF(train, num_features)
     
     # get the number of non-zero ratings for each user and item
-    nnz_items_per_user, nnz_users_per_item = train.getnnz(axis=0), train.getnnz(axis=1)
+    nnz_items_per_user,nnz_users_per_item=np.count_nonzero(train,axis=0),np.count_nonzero(train, axis=1)
     
     # group the indices by row or column index
     #print(train.shape)
@@ -280,44 +281,75 @@ def ALS(train, test, K, lambda_u, lambda_i):
     nnz_test = list(zip(nnz_row, nnz_col))
     rmse = compute_error(test, user_features, item_features, nnz_test)
     print("test RMSE after running ALS({K} {lamu} {lami}): {v}.".format(K=K, 
-    													lamu=lambda_u, lami=lambda_i,
-    													v=rmse))
+                                                        lamu=lambda_u, lami=lambda_i,
+                                                        v=rmse))
 
     return rmse, user_features, item_features
     # Create Submission
     
 
 
-kappas = range(4,31,2)
-lambda_u = range(1,50,5)
-lambda_i = range(1,50,5)
-# kappas = range(5,6,1)
-# lambda_u = range(1,2,1)
-# lambda_i = range(1,2,1)
-min_err = 100
-best_config = (0,0,0)
-print("\nTuning lambdas")
-# tune lambdas (separately from K. not the best but faster)
-for u,i in zip(lambda_u, lambda_i):
-	test_err, W, Z = ALS(train, test, 10, u/100, i/100)    
-	if test_err < min_err:
-		min_err = test_err
-		best_config = (10, u, i)
+# kappas = range(9,12,1)
+# lambda_u = range(90,91,1)
+# lambda_i = range(90,91,1)
+# # kappas = range(5,6,1)
+# # lambda_u = range(1,2,1)
+# # lambda_i = range(1,2,1)
+# min_err = 100
+# best_config = (0,0,0)
+# print("\nTuning lambdas")
+# # tune lambdas (separately from K. not the best but faster)
+# for u,i in zip(lambda_u, lambda_i):
+#   test_err, W, Z = ALS(train, test, 10, u/1000, i/1000)    
+#   if test_err < min_err:
+#       min_err = test_err
+#       best_config = (10, u, i)
+
+# # tune K
+# print("\nTuning K")
+# min_err = 100
+# best_W_Z = (None, None)
+# for k in kappas:
+#   test_err, W, Z = ALS(train, test, k, best_config[1]/1000, best_config[2]/1000)
+#   if test_err < min_err:
+#       min_err = test_err
+#       best_config = (k, best_config[1], best_config[2])
+#       best_W_Z = (W,Z)
+
+kappas = range(8,13,1)
+lambda_u = range(80,105,1)
+lambda_i = range(80,105,1)
+
+min_err = 10000
+best_config = (10,90,90)
+print("\nTuning lambda_u")
+# tune lamda_u (separately from K. not the best but faster)
+for u in lambda_u:
+    test_err, W, Z = ALS(train, test, 10, u/1000, best_config[2]/1000)    
+    if test_err < min_err:
+        min_err = test_err
+        best_config = (best_config[0], u, best_config[2])
+
+print("\nTuning lambda_i")
+for i in lambda_i:
+    test_err, W, Z = ALS(train, test, 10, best_config[1]/1000, i/1000)    
+    if test_err < min_err:
+        min_err = test_err
+        best_config = (best_config[0], best_config[1], i)
 
 # tune K
 print("\nTuning K")
-min_err = 100
+min_err = 10000
 best_W_Z = (None, None)
 for k in kappas:
-	test_err, W, Z = ALS(train, test, k, best_config[1]/100, best_config[2]/100)
-	if test_err < min_err:
-		min_err = test_err
-		best_config = (k, best_config[1], best_config[2])
-		best_W_Z = (W,Z)
-
+    test_err, W, Z = ALS(train, test, k, best_config[1]/1000, best_config[2]/1000)
+    if test_err < min_err:
+        min_err = test_err
+        best_config = (k, best_config[1], best_config[2])
+        best_W_Z = (W,Z)
 print("Best parameters are: K={k}, lambda_u={u}, lambda_i={i}. Test error={er}".format(
-								k=best_config[0], u=best_config[1], i=best_config[2],
-								er=min_err))
+                                k=best_config[0], u=best_config[1], i=best_config[2],
+                                er=min_err))
 
 X = best_W_Z[1].transpose().dot(best_W_Z[0])
-create_submission("../data/ALS.csv", X)
+create_submission("../data/ULTI.csv", X)
