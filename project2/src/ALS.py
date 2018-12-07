@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from helpers import load_data, preprocess_data
 from helpers import build_index_groups, create_submission
 from helpers import calculate_mse
+from helpers import split_data
 from plots import plot_raw_data
 
 
@@ -40,60 +41,7 @@ print("min # of items per user = {}, min # of users per item = {}.".format(
 # ----------------------------------------------------------------------------------------
 
 
-def split_data(ratings, num_items_per_user, num_users_per_item,
-               min_num_ratings, p_test=0.1):
-    """split the ratings to training data and test data.
-    Args:
-        min_num_ratings: 
-            all users and items we keep must have at least min_num_ratings per user and per item. 
-    """
-    # set seed
-    np.random.seed(988)
-    
-    # select user and item based on the condition.
-    valid_users = np.where(num_items_per_user >= min_num_ratings)[0]
-    valid_items = np.where(num_users_per_item >= min_num_ratings)[0]
-    valid_ratings = ratings[valid_items, :][: , valid_users]  
-    
-    # init
-    num_rows, num_cols = valid_ratings.shape
-    train = np.zeros((num_rows, num_cols))
-    test = np.zeros((num_rows, num_cols))
-    print("the shape of original ratings. (# of row, # of col): {}".format(
-        ratings.shape))
-    print("the shape of valid ratings. (# of row, # of col): {}".format(
-        (num_rows, num_cols)))
-
-
-    nz_items, nz_users = valid_ratings.nonzero()
-    
-    # split the data
-    for user in set(nz_users):
-        # randomly select a subset of ratings
-        
-        row = valid_ratings[:, user].nonzero()
-        # TODO: row,col = ... doesn't work :/ 
-        row = row[0]
-        
-        selects = np.random.choice(row, size=int(len(row) * p_test))
-        residual = list(set(row) - set(selects))
-
-        # add to train set
-        train[residual, user] = valid_ratings[residual, user]
-
-        # add to test set
-        test[selects, user] = valid_ratings[selects, user]
-
-    print("Total number of nonzero elements in origial data:{v}".format(v=np.count_nonzero(ratings)))
-    print("Total number of nonzero elements in train data:{v}".format(v=np.count_nonzero(train)))
-    print("Total number of nonzero elements in test data:{v}".format(v=np.count_nonzero(test)))
-    return valid_ratings, train, test
-
-# ----------------------------------------------------------------------------------------
-
-
-valid_ratings, train, test = split_data(
-        ratings, num_items_per_user, num_users_per_item, min_num_ratings=1, p_test=0.1)
+train, test = split_data(ratings, p_test=0.1)
 
 
 # ----------------------------------------------------------------------------------------

@@ -81,6 +81,48 @@ def preprocess_data(data, sparse_matrix=True):
     return ratings
 
 
+def split_data(ratings, p_test=0.1):
+    """
+        split the ratings to training data and test data.
+    """
+    # set seed
+    np.random.seed(988)
+    
+    # init
+    num_rows, num_cols = ratings.shape
+    train = np.zeros((num_rows, num_cols))
+    test = np.zeros((num_rows, num_cols))
+    print("Shape of original ratings (# of row, # of col): {}"\
+          .format(ratings.shape))
+
+    # nz_items, nz_users = ratings.nonzero()
+    nz_items, nz_users = np.nonzero(ratings)
+    
+    # split the data
+    for user in set(nz_users):
+        # randomly select a subset of ratings
+        
+        row = np.nonzero(ratings[:, user])[0]
+        
+        selects = np.random.choice(row, size = int(len(row) * p_test))
+        residual = list(set(row) - set(selects))
+
+        # add to train set
+        train[residual, user] = ratings[residual, user]
+
+        # add to test set
+        test[selects, user] = ratings[selects, user]
+
+    print("Total number of nonzero elements in original data: {v}"\
+          .format(v = np.count_nonzero(ratings)))
+    print("Total number of nonzero elements in train data: {v}"\
+          .format(v=np.count_nonzero(train)))
+    print("Total number of nonzero elements in test data: {v}"\
+          .format(v=np.count_nonzero(test)))
+
+    return train, test
+
+
 def group_by(data, index):
     """group list of list by a specific index."""
     sorted_data = sorted(data, key=lambda x: x[index])
