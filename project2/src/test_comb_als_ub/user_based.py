@@ -304,14 +304,20 @@ if __name__ == "__main__":
 		
 	num_users = train_ratings.shape[1]
 
-	# Calculate the mean of each user's ratings and store it
-	print("Prepping...", end="", flush=True)
-	user_mean_ratings = []
-	for user in range(num_users):
-		user_ratings = train_ratings[:, user]
-		user_mean_ratings.append(np.sum(user_ratings) / \
-								 len(np.nonzero(user_ratings)[0]))
-	print("Done")
+	# # Calculate the mean of each user's ratings and store it
+	# print("Prepping...", end="", flush=True)
+	# user_mean_ratings = []
+	# for user in range(num_users):
+	# 	user_ratings = train_ratings[:, user]
+	# 	user_mean_ratings.append(np.sum(user_ratings) / \
+	# 							 len(np.nonzero(user_ratings)[0]))
+	# print("Done")
+
+	# Use predictions from ALS
+
+	# TODO Implement
+
+	# --------------------------
 
 	if use_cached_sim:
 		# Extract cached user similarities
