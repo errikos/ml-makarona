@@ -68,7 +68,6 @@ def preprocess_data(data, sparse_matrix=True):
 
     # do statistics on the dataset.
     min_row, max_row, min_col, max_col = statistics(data)
-    # print("number of items: {}, number of users: {}".format(max_row, max_col))
 
     # build rating matrix.
     if sparse_matrix:
