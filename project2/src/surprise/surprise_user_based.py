@@ -15,7 +15,7 @@ from helpers import load_data
 sim_options = {'name': 'pearson', 'user_based': True}
 
 # Load ratings
-ratings_path = "../../data/train_clean.csv"
+ratings_path = "./data/train_clean.csv"
 reader = Reader(line_format='user item rating', sep=',', skip_lines=1)
 ratings = Dataset.load_from_file(ratings_path, reader)
 
@@ -30,7 +30,7 @@ def tune():
 	best_rmse = 100
 	for K in range(10, 100, 10):
 
-		# Build KNN item based model.
+		# Build KNN user based model.
 		algorithm = KNNWithMeans(k=K, sim_options=sim_options)
 
 		# Train the algorithm on the training set, and predict ratings 

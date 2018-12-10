@@ -21,7 +21,7 @@ from helpers import load_data
 # rmse (with 0.2 test and training sets): ~1.045
 
 # Load ratings
-ratings_path = "../../data/train_clean.csv"
+ratings_path = "./data/train_clean.csv"
 reader = Reader(line_format='user item rating', sep=',', skip_lines=1)
 ratings = Dataset.load_from_file(ratings_path, reader)
 

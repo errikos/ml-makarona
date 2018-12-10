@@ -21,7 +21,7 @@ def load_data(path_dataset, sparse_matrix=True):
 	data = read_txt(path_dataset)[1:]
 	data = [deal_line(line) for line in data]
 
-	csvfile = open("train_clean.csv", 'w')
+	csvfile = open("./data/surprise_item_based_bsln_top50_clean.csv", 'w')
 
 	fieldnames = ['Item', 'User', 'Rating']
 	writer = csv.DictWriter(csvfile, delimiter=",", \
@@ -32,4 +32,4 @@ def load_data(path_dataset, sparse_matrix=True):
 		writer.writerow({'Item': item - 1, 'User': user - 1, 'Rating': rating})
 
 
-load_data("train.csv")
+load_data("./submissions/surprise_item_based_bsln_top50.csv")

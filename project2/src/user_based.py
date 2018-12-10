@@ -113,7 +113,7 @@ def calculate_user_similarities(ratings_dense, user_mean_ratings, \
 		for user1 in range(num_users):
 
 			if user1 % 50 == 0:
-				print("Progress: %d/1000" % user1)
+				print("Progress: %d/%d" % (user1, num_users))
 
 			for user2 in range(user1 + 1, num_users):
 
@@ -268,9 +268,9 @@ if __name__ == "__main__":
 
 	similarities_path = "../data/pearson_sim_test_mode_intersection.csv"
 	# submission_path = "../submissions/sub_user_based_inter_0.1.csv"
-	use_cached_sim = True  #TODO Handle as sys argument
+	use_cached_sim = False  #TODO Handle as sys argument
 	cache = False
-	test_mode = False
+	test_mode = True
 	min_common_percentage = 0
 
 	if len(sys.argv) == 3:
@@ -292,6 +292,8 @@ if __name__ == "__main__":
 	# Load ratings
 	ratings_path = "../data/train.csv"
 	ratings = load_data(ratings_path, sparse_matrix=False)
+
+	ratings = ratings.transpose()  #TODO Remove and change load_data instead
 
 	# Split ratings into a training and a test set, which, if we are not
 	# in test mode, is the set of real missing ratings that need to be

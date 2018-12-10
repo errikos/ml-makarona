@@ -17,7 +17,8 @@ bsl_options = {'method': 'als', 'n_epochs': 100, 'reg_u': 0.09, \
 			   'reg_i': 0.09}
 
 # Load ratings
-ratings_path = "../../data/train_clean.csv"
+ratings_path = "./data/train_clean.csv"
+# ratings_path = "./data/surprise_item_based_bsln_top50_full_enhanced_clean.csv"
 reader = Reader(line_format='user item rating', sep=',', skip_lines=1)
 ratings = Dataset.load_from_file(ratings_path, reader)
 
@@ -32,7 +33,7 @@ def tune():
 	best_rmse = 100
 	for K in range(10, 100, 10):
 
-		# Build KNN item based model.
+		# Build KNN user based model.
 		algorithm = KNNBaseline(k=K, sim_options=sim_options)
 
 		# Train the algorithm on the training set, and predict ratings 
@@ -75,7 +76,7 @@ def test_crossval(cv=3, K=50):
 
 	print("Cross validating...")
 
-	# Build KNN item based model.
+	# Build KNN user based model.
 	algorithm = KNNBaseline(k=K, sim_options=sim_options)
 
 	# Run 2-fold cross-validation and print results
@@ -90,7 +91,7 @@ def submit(K=50):
 	# Retrieve the trainset.
 	train_ratings = ratings.build_full_trainset()
 
-	# Build KNN item based model and train it.
+	# Build KNN user based model and train it.
 	algorithm = KNNBaseline(k=K, sim_options=sim_options)
 	algorithm.fit(train_ratings)
 
