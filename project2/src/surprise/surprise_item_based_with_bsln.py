@@ -11,6 +11,7 @@ from surprise.model_selection import cross_validate
 from surprise.model_selection import GridSearchCV
 
 from helpers import load_data, calculate_rmse
+import tune as tn
 
 sim_options = {'name': 'pearson_baseline', 'user_based': False}
 bsl_options = {'method': 'als', 'n_epochs': 100, 'reg_u': 0.09, \
@@ -226,6 +227,8 @@ if __name__ == '__main__':
 			test_crossval()
 		elif sys.argv[1] == '--submit':
 			submit()
+		elif sys.argv[1] == '--tunecross':
+			tn.tune_K_crossval(sim_options, ratings)
 		else:
 			test()
 	else:

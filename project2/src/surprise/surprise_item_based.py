@@ -11,6 +11,7 @@ from surprise.model_selection import cross_validate
 from surprise.model_selection import GridSearchCV
 
 from helpers import load_data 
+import tune
 
 sim_options = {'name': 'pearson', 'user_based': False}
 
@@ -148,6 +149,8 @@ if __name__ == '__main__':
 			test_crossval(2)
 		elif sys.argv[1] == '--submit':
 			submit()
+		elif sys.argv[1] == '--tunecross':
+			tune.tune_K_crossval(sim_options, ratings)
 		else:
 			test()
 	else:
