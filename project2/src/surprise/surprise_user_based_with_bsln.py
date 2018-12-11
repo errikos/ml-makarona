@@ -61,7 +61,7 @@ def test(K=50):
 
 	# Sample random training set and test set.
 	train_ratings, test_ratings = train_test_split(ratings, \
-								  test_size=0.2)
+								  test_size=0.1)
 
 	# Train the algorithm on the training set, and predict ratings 
 	# for the test set.

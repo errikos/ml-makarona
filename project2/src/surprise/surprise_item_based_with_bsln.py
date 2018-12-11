@@ -22,13 +22,18 @@ ratings_path = "./data/train_clean.csv"
 reader = Reader(line_format='user item rating', sep=',', skip_lines=1)
 ratings = Dataset.load_from_file(ratings_path, reader)
 
+# Test size
+test_size = 0.1
+seed = 50
+
 def tune():
 
 	print("Tuning...")
 
 	# Sample random training set and test set.
-	train_ratings, test_ratings = train_test_split(ratings, \
-								  train_size=0.02, test_size=0.02)
+	train_ratings, test_ratings = train_test_split(ratings,\
+								  				   test_size=test_size, \
+								  				   random_state=seed)
 
 	best_rmse = 100
 	for K in range(10, 100, 10):
@@ -82,8 +87,8 @@ def test(K=50):
 
 	# Sample random training set and test set.
 	train_ratings, test_ratings = train_test_split(ratings, \
-								  # train_size=0.02, test_size=0.02)
-								  test_size=0.2)
+						 						   test_size=test_size, \
+						 						   random_state=seed)
 
 	# Train the algorithm on the training set, and predict ratings 
 	# for the test set.
@@ -224,4 +229,4 @@ if __name__ == '__main__':
 		else:
 			test()
 	else:
-		submit()
+		test()
