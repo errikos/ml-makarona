@@ -22,7 +22,7 @@ ratings_path = "./data/train_clean.csv"
 reader = Reader(line_format='user item rating', sep=',', skip_lines=1)
 ratings = Dataset.load_from_file(ratings_path, reader)
 
-# Test size
+# Test parameters
 test_size = 0.1
 seed = 50
 
