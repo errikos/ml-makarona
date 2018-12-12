@@ -55,7 +55,7 @@ def tune():
 
 def tune_gs():
 
-    param_grid = {'k': range(10, 11, 10),
+    param_grid = {'k': range(10, 100, 10),
                   'sim_options': {'name': ['pearson'],
                                   'user_based': [False]}
                  }

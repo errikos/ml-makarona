@@ -199,7 +199,7 @@ def submit(K=50):
 
     # Create submission file
     submission_path = "./submissions/surprise_item_based_bsln_top" +
-                        str(K) +"_full_enhanced.csv"
+                        str(K) + ".csv"
     csvfile = open(submission_path, 'w')
 
     fieldnames = ['Id', 'Prediction']
