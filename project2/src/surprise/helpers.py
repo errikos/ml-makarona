@@ -8,6 +8,7 @@ import scipy.sparse as sp
 import csv
 import math
 
+
 def read_txt(path):
     """
         read text file from path.
@@ -29,6 +30,7 @@ def preprocess_data(data, sparse_matrix=True):
     """
         Returns an array of ratings with shape users x items
     """
+
     def deal_line(line):
         pos, rating = line.split(',')
         row, col = pos.split("_")
@@ -59,7 +61,6 @@ def preprocess_data(data, sparse_matrix=True):
 
 
 def load_clean(path_dataset):
-
     def deal_line(line):
         row, col, rating = line.split(',')
         return int(row), int(col), float(rating)
@@ -98,42 +99,42 @@ def split_data(p_test=0.1, seed=988):
 
     # Get non zero users and items
     nz_users, nz_items = np.nonzero(ratings)
-    
+
     # Split the data and store training and test ratings in two \
     # separate files
     trainfile = open("./data/" + str(seed) + "_training.csv", 'w')
     testfile = open("./data/" + str(seed) + "_test.csv", 'w')
 
     fieldnames = ['User', 'Item', 'Rating']
-    trainwriter = csv.DictWriter(trainfile, delimiter=",", \
-                                fieldnames=fieldnames, lineterminator = '\n')
-    testwriter = csv.DictWriter(testfile, delimiter=",", \
-                                fieldnames=fieldnames, lineterminator = '\n')
+    trainwriter = csv.DictWriter(trainfile, delimiter=",",
+                                fieldnames=fieldnames, lineterminator='\n')
+    testwriter = csv.DictWriter(testfile, delimiter=",",
+                                fieldnames=fieldnames, lineterminator='\n')
     trainwriter.writeheader()
     testwriter.writeheader()
 
     # Randomly select a subset of items for each user, to go to the
     # test set.
     for user in set(nz_users):
-        
+
         cols = np.nonzero(ratings[user, :])[0]
-        
-        selects = np.random.choice(cols, size = int(len(cols) * p_test))
+
+        selects = np.random.choice(cols, size=int(len(cols) * p_test))
         residual = list(set(cols) - set(selects))
 
         # Add to training set
         for item in residual:
-            trainwriter.writerow({'User': user, 'Item': item, \
+            trainwriter.writerow({'User': user, 'Item': item,
                                   'Rating': ratings[user, item]})
 
         # Add to test set
         for item in selects:
-            testwriter.writerow({'User': user, 'Item': item, \
+            testwriter.writerow({'User': user, 'Item': item,
                                  'Rating': ratings[user, item]})
 
     trainfile.close()
     testfile.close()
-            
+
 
 def calculate_rmse(algorithm, true_ratings_path):
     """ 
@@ -158,7 +159,7 @@ def calculate_rmse(algorithm, true_ratings_path):
         elif val < 1:
             val = 1
 
-        mse += (true_ratings[row, col] - val) ** 2
+        mse += (true_ratings[row, col] - val)**2
 
     return math.sqrt(1.0 * mse / len(rows))
 

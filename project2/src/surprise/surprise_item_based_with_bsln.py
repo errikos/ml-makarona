@@ -13,8 +13,7 @@ from helpers import load_data, calculate_rmse
 from tune_grid_search import tune_grid_search
 
 sim_options = {'name': 'pearson_baseline', 'user_based': False}
-bsl_options = {'method': 'als', 'n_epochs': 100, 'reg_u': 0.09,
-               'reg_i': 0.09}
+bsl_options = {'method': 'als', 'n_epochs': 100, 'reg_u': 0.09, 'reg_i': 0.09}
 
 # Load ratings
 ratings_path = "./data/train_clean.csv"
@@ -26,22 +25,21 @@ ratings = Dataset.load_from_file(ratings_path, reader)
 test_size = 0.1
 seed = 50
 
-def tune():
 
+def tune():
     print("Tuning...")
 
     # Sample random training set and test set.
-    train_ratings, test_ratings = train_test_split(ratings,
-                                                   test_size=test_size,
-                                                   random_state=seed)
+    train_ratings, test_ratings = train_test_split(
+        ratings, test_size=test_size, random_state=seed)
 
-    best_rmse = 100
+    best_param, best_rmse = -1, 100
     for K in range(10, 100, 10):
 
         # Build KNN item based model.
         algorithm = KNNBaseline(k=K, sim_options=sim_options)
 
-        # Train the algorithm on the training set, and predict ratings 
+        # Train the algorithm on the training set, and predict ratings
         # for the test set.
         algorithm.fit(train_ratings)
         predictions = algorithm.test(test_ratings)
@@ -57,18 +55,24 @@ def tune():
 
 
 def tune_gs():
+    param_grid = {
+        'k': range(10, 100, 10),
+        'sim_options': {
+            'name': ['pearson_baseline'],
+            'user_based': [False]
+        }
+    }
 
-    param_grid = {'k': range(10, 100, 10),
-                  'sim_options': {'name': ['pearson_baseline'],
-                                  'user_based': [False]}
-                 }
+    tune_grid_search(
+        ratings,
+        KNNBaseline,
+        param_grid,
+        "item_based_bsln.txt",
+        n_jobs=2,
+        pre_dispatch=4)
 
-    tune_grid_search(ratings, KNNBaseline, param_grid, "item_based_bsln.txt", 
-                        n_jobs=2, pre_dispatch=4)
 
-
-def test_mine(K=50):
-
+def test_mine(k=50):
     print("Testing...")
 
     # Load ratings
@@ -80,7 +84,7 @@ def test_mine(K=50):
     train_ratings = ratings.build_full_trainset()
 
     # Build KNN item based model and train it.
-    algorithm = KNNBaseline(k=K, sim_options=sim_options)
+    algorithm = KNNBaseline(k=k, sim_options=sim_options)
     algorithm.fit(train_ratings)
 
     print("Calculating RMSE...")
@@ -88,45 +92,39 @@ def test_mine(K=50):
     print("RMSE:", calculate_rmse(algorithm, "./data/988_test.csv"))
 
 
-def test(K=50):
-
+def test(k=50):
     print("Testing...")
 
     # Build KNN item based model.
-    algorithm = KNNBaseline(k=K, sim_options=sim_options)
-
+    algorithm = KNNBaseline(k=k, sim_options=sim_options)
 
     # Sample random training set and test set.
-    train_ratings, test_ratings = train_test_split(ratings,
-                                                   test_size=test_size,
-                                                   random_state=seed)
+    train_ratings, test_ratings = train_test_split(
+        ratings, test_size=test_size, random_state=seed)
 
-    # Train the algorithm on the training set, and predict ratings 
+    # Train the algorithm on the training set, and predict ratings
     # for the test set.
     algorithm.fit(train_ratings)
     predictions = algorithm.test(test_ratings)
 
     # Then compute RMSE
     accuracy.rmse(predictions)
-    
 
-def test_crossval(cv=3, K=50):
 
+def test_crossval(cv=3, k=50):
     print("Cross validating...")
 
     # Build KNN item based model.
-    algorithm = KNNBaseline(k=K, sim_options=sim_options)
+    algorithm = KNNBaseline(k=k, sim_options=sim_options)
 
     # Run 2-fold cross-validation and print results
-    cross_validate(algorithm, ratings,
-                    measures=['RMSE'], cv=cv, verbose=True)
+    cross_validate(algorithm, ratings, measures=['RMSE'], cv=cv, verbose=True)
 
 
-def produce_enhanced(K=50):
-
+def produce_enhanced(k=50):
     print("Producing enhanced training set...")
 
-    # TODO Perhaps use surprise class Trainset's all_items method 
+    # TODO Perhaps use surprise class Trainset's all_items method
     # TODO (and outer to inner id conversion)
     # Load original ratings into numpy array
     orig_ratings = load_data("../../data/train.csv", sparse_matrix=False)
@@ -135,23 +133,23 @@ def produce_enhanced(K=50):
     train_ratings = ratings.build_full_trainset()
 
     # Build KNN item based model.
-    algorithm = KNNBaseline(k=K, sim_options=sim_options)
+    algorithm = KNNBaseline(k=k, sim_options=sim_options)
     algorithm.fit(train_ratings)
 
     # Store enhanced training set
-    submission_path = "./data/surprise_item_based_bsln_top" +
-                        str(K) +"_full_enhanced_clean.csv"
+    submission_path = ("./data/surprise_item_based_bsln_top" + str(k) +
+                       "_full_enhanced_clean.csv")
     csvfile = open(submission_path, 'w')
 
     fieldnames = ['User', 'Item', 'Rating']
-    writer = csv.DictWriter(csvfile, delimiter=",",
-                        fieldnames=fieldnames, lineterminator = '\n')
+    writer = csv.DictWriter(
+        csvfile, delimiter=",", fieldnames=fieldnames, lineterminator='\n')
     writer.writeheader()
 
     counter = 0
     for row in range(10000):
         for col in range(1000):
-            
+
             uid = str(row)
             iid = str(col)
 
@@ -166,26 +164,28 @@ def produce_enhanced(K=50):
                     val = 5
                 elif val < 1:
                     val = 1
-                
+
                 writer.writerow({'User': uid, 'Item': iid, 'Rating': val})
                 csvfile.flush()
             else:
-                writer.writerow({'User': uid, 'Item': iid,
-                                 'Rating': orig_ratings[row, col]})
+                writer.writerow({
+                    'User': uid,
+                    'Item': iid,
+                    'Rating': orig_ratings[row, col]
+                })
                 csvfile.flush()
 
     csvfile.close()
 
 
-def submit(K=50):
-
+def submit(k=50):
     print("Creating submission...")
 
     # Retrieve the trainset.
     train_ratings = ratings.build_full_trainset()
 
     # Build KNN item based model and train it.
-    algorithm = KNNBaseline(k=K, sim_options=sim_options)
+    algorithm = KNNBaseline(k=k, sim_options=sim_options)
     algorithm.fit(train_ratings)
 
     # Get submission file format
@@ -195,16 +195,16 @@ def submit(K=50):
 
     rows, cols = np.nonzero(test_ratings)
     zp = list(zip(rows, cols))
-    zp.sort(key = lambda tup: tup[1])
+    zp.sort(key=lambda tup: tup[1])
 
     # Create submission file
-    submission_path = "./submissions/surprise_item_based_bsln_top" +
-                        str(K) + ".csv"
+    submission_path = ("./submissions/surprise_item_based_bsln_top" + str(k) +
+                       "_full_enhanced.csv")
     csvfile = open(submission_path, 'w')
 
     fieldnames = ['Id', 'Prediction']
-    writer = csv.DictWriter(csvfile, delimiter=",",
-                        fieldnames=fieldnames, lineterminator = '\n')
+    writer = csv.DictWriter(
+        csvfile, delimiter=",", fieldnames=fieldnames, lineterminator='\n')
     writer.writeheader()
 
     counter = 0
@@ -222,7 +222,7 @@ def submit(K=50):
             val = 5
         elif val < 1:
             val = 1
-        
+
         r = "r" + str(row + 1)
         c = "c" + str(col + 1)
         writer.writerow({'Id': r + "_" + c, 'Prediction': val})
@@ -231,7 +231,6 @@ def submit(K=50):
 
 
 if __name__ == '__main__':
-
     if len(sys.argv) == 2:
         if sys.argv[1] == '--tune':
             tune()
@@ -246,4 +245,4 @@ if __name__ == '__main__':
         else:
             test()
     else:
-        test();
+        test()

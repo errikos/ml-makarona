@@ -8,14 +8,12 @@ from surprise import Reader
 from surprise import accuracy
 from surprise.model_selection import train_test_split
 from surprise.model_selection import cross_validate
-from surprise.model_selection import GridSearchCV
 
-from helpers import load_data 
+from helpers import load_data
 from tune_grid_search import tune_grid_search
 
 sim_options = {'name': 'pearson_baseline', 'user_based': True}
-bsl_options = {'method': 'als', 'n_epochs': 100, 'reg_u': 0.09,
-               'reg_i': 0.09}
+bsl_options = {'method': 'als', 'n_epochs': 100, 'reg_u': 0.09, 'reg_i': 0.09}
 
 # Load ratings
 ratings_path = "./data/train_clean.csv"
@@ -27,22 +25,21 @@ ratings = Dataset.load_from_file(ratings_path, reader)
 test_size = 0.1
 seed = 50
 
-def tune():
 
+def tune():
     print("Tuning...")
 
     # Sample random training set and test set.
-    train_ratings, test_ratings = train_test_split(ratings,
-                                                   test_size=test_size,
-                                                   random_state=seed)
+    train_ratings, test_ratings = train_test_split(
+        ratings, test_size=test_size, random_state=seed)
 
-    best_rmse = 100
+    best_param, best_rmse = 100
     for K in range(10, 100, 10):
 
         # Build KNN user based model.
         algorithm = KNNBaseline(k=K, sim_options=sim_options)
 
-        # Train the algorithm on the training set, and predict ratings 
+        # Train the algorithm on the training set, and predict ratings
         # for the test set.
         algorithm.fit(train_ratings)
         predictions = algorithm.test(test_ratings)
@@ -58,59 +55,60 @@ def tune():
 
 
 def tune_gs():
+    param_grid = {
+        'k': range(100, 1000, 100),
+        'sim_options': {
+            'name': ['pearson_baseline'],
+            'user_based': [True]
+        }
+    }
 
-    param_grid = {'k': range(100, 1000, 100),
-                  'sim_options': {'name': ['pearson_baseline'],
-                                  'user_based': [True]}
-                 }
+    tune_grid_search(
+        ratings,
+        KNNBaseline,
+        param_grid,
+        "user_based_bsln.txt",
+        n_jobs=2,
+        pre_dispatch=2)
 
-    tune_grid_search(ratings, KNNBaseline, param_grid, "user_based_bsln.txt"
-                        n_jobs=2, pre_dispatch=2)
 
-
-def test(K=50):
-
+def test(k=50):
     print("Testing...")
 
     # Build KNN user based model.
-    algorithm = KNNBaseline(k=K, sim_options=sim_options)
-
+    algorithm = KNNBaseline(k=k, sim_options=sim_options)
 
     # Sample random training set and test set.
-    train_ratings, test_ratings = train_test_split(ratings,
-                                                   test_size=test_size,
-                                                   random_state=seed)
+    train_ratings, test_ratings = train_test_split(
+        ratings, test_size=test_size, random_state=seed)
 
-    # Train the algorithm on the training set, and predict ratings 
+    # Train the algorithm on the training set, and predict ratings
     # for the test set.
     algorithm.fit(train_ratings)
     predictions = algorithm.test(test_ratings)
 
     # Then compute RMSE
     accuracy.rmse(predictions)
-    
 
-def test_crossval(cv=3, K=50):
 
+def test_crossval(cv=3, k=50):
     print("Cross validating...")
 
     # Build KNN user based model.
-    algorithm = KNNBaseline(k=K, sim_options=sim_options)
+    algorithm = KNNBaseline(k=k, sim_options=sim_options)
 
     # Run 2-fold cross-validation and print results
-    cross_validate(algorithm, ratings,
-                    measures=['RMSE'], cv=cv, verbose=True)
+    cross_validate(algorithm, ratings, measures=['RMSE'], cv=cv, verbose=True)
 
 
-def submit(K=50):
-
+def submit(k=50):
     print("Creating submission...")
 
     # Retrieve the trainset.
     train_ratings = ratings.build_full_trainset()
 
     # Build KNN user based model and train it.
-    algorithm = KNNBaseline(k=K, sim_options=sim_options)
+    algorithm = KNNBaseline(k=k, sim_options=sim_options)
     algorithm.fit(train_ratings)
 
     # Get submission file format
@@ -120,16 +118,16 @@ def submit(K=50):
 
     rows, cols = np.nonzero(test_ratings)
     zp = list(zip(rows, cols))
-    zp.sort(key = lambda tup: tup[1])
+    zp.sort(key=lambda tup: tup[1])
 
     # Create submission file
-    submission_path = "./submissions/surprise_user_based_bsln_top" +
-                        str(K) +".csv"
+    submission_path = (
+        "./submissions/surprise_user_based_bsln_top" + str(k) + ".csv")
     csvfile = open(submission_path, 'w')
 
     fieldnames = ['Id', 'Prediction']
-    writer = csv.DictWriter(csvfile, delimiter=",",
-                        fieldnames=fieldnames, lineterminator = '\n')
+    writer = csv.DictWriter(
+        csvfile, delimiter=",", fieldnames=fieldnames, lineterminator='\n')
     writer.writeheader()
 
     counter = 0
@@ -147,7 +145,7 @@ def submit(K=50):
             val = 5
         elif val < 1:
             val = 1
-        
+
         r = "r" + str(row + 1)
         c = "c" + str(col + 1)
         writer.writerow({'Id': r + "_" + c, 'Prediction': val})
@@ -156,7 +154,6 @@ def submit(K=50):
 
 
 if __name__ == '__main__':
-
     if len(sys.argv) == 2:
         if sys.argv[1] == '--tune':
             tune()
