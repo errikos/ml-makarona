@@ -11,6 +11,7 @@ from surprise.model_selection import cross_validate
 from surprise.model_selection import GridSearchCV
 
 from helpers import load_data 
+from tune_grid_search import tune_grid_search
 
 sim_options = {'name': 'pearson_baseline', 'user_based': True}
 bsl_options = {'method': 'als', 'n_epochs': 100, 'reg_u': 0.09, \
@@ -54,6 +55,17 @@ def tune():
 			best_param = K
 
 	print("Best K:", best_param, " with rmse:", best_rmse)
+
+
+def tune_gs():
+
+	param_grid = {'k': range(100, 1000, 100), \
+				  'sim_options': {'name': ['pearson_baseline'], \
+								  'user_based': [True]} \
+				 }
+
+	tune_grid_search(ratings, KNNBaseline, param_grid, \
+						n_jobs=2, pre_dispatch=2)
 
 
 def test(K=50):
@@ -152,6 +164,8 @@ if __name__ == '__main__':
 			test_crossval()
 		elif sys.argv[1] == '--submit':
 			submit()
+		elif sys.argv[1] == '--tunegs':
+			tune_gs()
 		else:
 			test()
 	else:

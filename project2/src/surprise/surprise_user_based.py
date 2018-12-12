@@ -8,9 +8,9 @@ from surprise import Reader
 from surprise import accuracy
 from surprise.model_selection import train_test_split
 from surprise.model_selection import cross_validate
-from surprise.model_selection import GridSearchCV
 
-from helpers import load_data 
+from helpers import load_data
+from tune_grid_search import tune_grid_search
 
 sim_options = {'name': 'pearson', 'user_based': True}
 
@@ -51,6 +51,17 @@ def tune():
 			best_param = K
 
 	print("Best K:", best_param, " with rmse:", best_rmse)
+
+
+def tune_gs():
+
+	param_grid = {'k': range(100, 1000, 100), \
+				  'sim_options': {'name': ['pearson'], \
+								  'user_based': [True]} \
+				 }
+
+	tune_grid_search(ratings, KNNWithMeans, param_grid, \
+						n_jobs=2, pre_dispatch=2)
 
 
 def test(K=40):
@@ -148,6 +159,8 @@ if __name__ == '__main__':
 			test_crossval(2)
 		elif sys.argv[1] == '--submit':
 			submit()
+		elif sys.argv[1] == '--tunegs':
+			tune_gs();
 		else:
 			test()
 	else:

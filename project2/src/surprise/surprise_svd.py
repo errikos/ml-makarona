@@ -11,6 +11,7 @@ from surprise.model_selection import cross_validate
 from surprise.model_selection import GridSearchCV
 
 from helpers import load_data
+from tune_grid_search import tune_grid_search
 
 # Best params(?):
 # factors = 10
@@ -57,6 +58,16 @@ def tune():
 			best_param = param
 
 	print("Best reg:", best_param, " with rmse:", best_rmse)
+
+
+def tune_gs():
+
+	param_grid = {'n_factors': range(10, 50, 10) , 'n_epochs': [400], \
+				 'lr_all': [x/10000 for x in range(2, 10, 2)], \
+				 'reg_all': [x/1000 for x in range(1, 10, 2)]}
+
+	tune_grid_search(ratings, SVD, param_grid, \
+						n_jobs=2, pre_dispatch=4)
 
 
 def test():
@@ -162,6 +173,8 @@ if __name__ == '__main__':
 			test_crossval()
 		elif sys.argv[1] == '--submit':
 			submit()
+		elif sys.argv[1] == '--tunegs':
+			tune_gs()
 		else:
 			test()
 	else:
