@@ -21,6 +21,10 @@ ratings = Dataset.load_from_file(ratings_path, reader)
 test_size = 0.1
 seed = 50
 
+# Best params(?):
+# n_epochs = 140
+# n_cltr_u = 2
+# n_cltr_i = 9
 
 def tune():
     print("Tuning...")
@@ -30,10 +34,10 @@ def tune():
         ratings, test_size=test_size, random_state=seed)
 
     best_param, best_rmse = -1, 100
-    for epochs in range(20, 200, 20):
+    for cltr_i in range(1, 11):
 
         # Build KNN item based model.
-        algorithm = CoClustering(n_epochs=epochs)
+        algorithm = CoClustering(n_epochs=140, n_cltr_u=2, n_cltr_i=cltr_i)
 
         # Train the algorithm on the training set, and predict ratings
         # for the test set.
@@ -41,18 +45,18 @@ def tune():
         predictions = algorithm.test(test_ratings)
 
         # Then compute RMSE
-        print("epochs:", epochs)
+        print("cltr_i:", cltr_i)
         rmse = accuracy.rmse(predictions)
         if rmse < best_rmse:
             best_rmse = rmse
-            best_param = epochs
+            best_param = cltr_i
 
-    print("Best number of epochs:", best_param, " with rmse:", best_rmse)
+    print("Best n_cltr_i:", best_param, " with rmse:", best_rmse)
 
 
 def tune_gs():
     param_grid = {
-        'n_epochs': range(10, 100, 10),
+        'n_epochs': range(10, 200, 10),
         'n_cltr_u': range(1, 10),
         'n_cltr_i': range(1, 10)
     }
@@ -70,7 +74,7 @@ def test():
     print("Testing...")
 
     # Build KNN item based model.
-    algorithm = CoClustering()
+    algorithm = CoClustering(n_epochs=140, n_cltr_u=2, n_cltr_i=9)
 
     # Sample random training set and test set.
     train_ratings, test_ratings = train_test_split(

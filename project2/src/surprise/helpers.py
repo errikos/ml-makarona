@@ -61,6 +61,7 @@ def preprocess_data(data, sparse_matrix=True):
 
 
 def load_clean(path_dataset):
+
     def deal_line(line):
         row, col, rating = line.split(',')
         return int(row), int(col), float(rating)
@@ -82,7 +83,7 @@ def load_clean(path_dataset):
     ratings = np.zeros((max_row, max_col))
 
     for row, col, rating in data:
-        ratings[row - 1, col - 1] = rating
+        ratings[row, col] = rating
     return ratings
 
 
@@ -154,20 +155,21 @@ def split_data(p_test=0.1, seed=988):
 
     # Randomly select a subset of items for each user, to go to the
     # test set.
-    for user in set(nz_users):
+    for user in sorted(set(nz_users)):
 
         cols = np.nonzero(ratings[user, :])[0]
 
-        selects = np.random.choice(cols, size=int(len(cols) * p_test))
+        selects = np.random.choice(cols, size=int(len(cols) * p_test), 
+                                    replace=False)
         residual = list(set(cols) - set(selects))
 
         # Add to training set
-        for item in residual:
+        for item in sorted(residual):
             trainwriter.writerow({'User': user, 'Item': item,
                                   'Rating': ratings[user, item]})
 
         # Add to test set
-        for item in selects:
+        for item in sorted(selects):
             testwriter.writerow({'User': user, 'Item': item,
                                  'Rating': ratings[user, item]})
 
