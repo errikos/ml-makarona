@@ -86,6 +86,30 @@ def load_clean(path_dataset):
     return ratings
 
 
+def load_clean_vec(path_dataset):
+
+    def deal_line(line):
+        row, col, rating = line.split(',')
+        return int(row), int(col), float(rating)
+
+
+    data = read_txt(path_dataset)[1:]
+
+    # Parse each line.
+    data = [deal_line(line) for line in data]
+
+    # Build rating matrix.
+    users = np.zeros(len(data))
+    items = np.zeros(len(data))
+    ratings = np.zeros(len(data))
+
+    for i, tup in enumerate(data):
+        users[i] = tup[0]
+        items[i] = tup[1]
+        ratings[i] = tup[2]
+    return users, items, ratings
+
+
 def split_data(p_test=0.1, seed=988):
     """
         Load and split original ratings to training and test sets and store 
