@@ -31,142 +31,144 @@ seed = 50
 
 def tune():
 
-	print("Tuning...")	
+    print("Tuning...")  
 
-	# Sample random training set and test set.
-	train_ratings, test_ratings = train_test_split(ratings, \
-								  				   test_size=test_size, \
-								  				   random_state=seed)
+    # Sample random training set and test set.
+    train_ratings, test_ratings = train_test_split(ratings,
+                                                   test_size=test_size,
+                                                   random_state=seed)
 
-	best_rmse = 100
-	for param in range(1, 1000, 100):
+    best_rmse = 100
+    for param in range(1, 1000, 100):
 
-		# Build SVDpp model.
-		algorithm = SVDpp(n_factors=10, n_epochs=400, \
-						lr_all=0.0002, reg_all=param/10000)
+        # Build SVDpp model.
+        algorithm = SVDpp(n_factors=10, n_epochs=400,
+                        lr_all=0.0002, reg_all=param/10000)
 
-		# Train the algorithm on the training set, and predict ratings 
-		# for the test set.
-		algorithm.fit(train_ratings)
-		predictions = algorithm.test(test_ratings)
+        # Train the algorithm on the training set, and predict ratings 
+        # for the test set.
+        algorithm.fit(train_ratings)
+        predictions = algorithm.test(test_ratings)
 
-		# Then compute RMSE
-		print("Reg:", param/10000)
-		rmse = accuracy.rmse(predictions)
-		if rmse < best_rmse:
-			best_rmse = rmse
-			best_param = param
+        # Then compute RMSE
+        print("Reg:", param/10000)
+        rmse = accuracy.rmse(predictions)
+        if rmse < best_rmse:
+            best_rmse = rmse
+            best_param = param
 
-	print("Best reg:", best_param, " with rmse:", best_rmse)
+    print("Best reg:", best_param, " with rmse:", best_rmse)
 
 
 def tune_gs():
 
-	param_grid = {'n_factors': range(10, 50, 10) , 'n_epochs': [400], \
-				 'lr_all': [x/10000 for x in range(2, 10, 2)], \
-				 'reg_all': [x/1000 for x in range(1, 10, 2)]}
+    param_grid = {'n_factors': range(10, 50, 10) , 'n_epochs': [400],
+                 'lr_all': [x/10000 for x in range(2, 10, 2)],
+                 'reg_all': [x/1000 for x in range(1, 10, 2)]}
 
-	tune_grid_search(ratings, SVDpp, param_grid, \
-						n_jobs=2, pre_dispatch=4)
+    tune_grid_search(ratings, SVDpp, param_grid, "svdpp.txt"
+                        n_jobs=2, pre_dispatch=4)
 
 
 def test():
 
-	print("Testing...")
+    print("Testing...")
 
-	# Build SVDpp model.
-	algorithm = SVDpp()
+    # Build SVDpp model.
+    algorithm = SVDpp()
 
-	# Sample random training set and test set.
-	train_ratings, test_ratings = train_test_split(ratings, \
-							  					   test_size=test_size, \
-							  					   random_state=seed)
+    # Sample random training set and test set.
+    train_ratings, test_ratings = train_test_split(ratings,
+                                                   test_size=test_size,
+                                                   random_state=seed)
 
-	# Train the algorithm on the training set, and predict ratings 
-	# for the test set.
-	algorithm.fit(train_ratings)
-	predictions = algorithm.test(test_ratings)
+    # Train the algorithm on the training set, and predict ratings 
+    # for the test set.
+    algorithm.fit(train_ratings)
+    predictions = algorithm.test(test_ratings)
 
-	# Then compute RMSE
-	accuracy.rmse(predictions)
+    # Then compute RMSE
+    accuracy.rmse(predictions)
 
 def test_crossval(cv=3):
 
-	print("Cross validating...")
+    print("Cross validating...")
 
-	# Build SVDpp model.
-	algorithm = SVDpp()
+    # Build SVDpp model.
+    algorithm = SVDpp()
 
-	# Run 3-fold cross-validation and print results
-	cross_validate(algorithm, ratings, \
-					measures=['RMSE'], cv=cv, verbose=True)
+    # Run 3-fold cross-validation and print results
+    cross_validate(algorithm, ratings,
+                    measures=['RMSE'], cv=cv, verbose=True)
 
 
 def submit():
 
-	print("Creating submission...")
+    print("Creating submission...")
 
-	# Retrieve the trainset.
-	train_ratings = ratings.build_full_trainset()
+    # Retrieve the trainset.
+    train_ratings = ratings.build_full_trainset()
 
-	# Build SVDpp model and train it.
-	sim_options = {'name': 'pearson', 'user_based': True}
-	algorithm = SVDpp(n_factors=10, n_epochs=400, lr_all=0.0001, reg_all=0.001)
-	algorithm.fit(train_ratings)
+    # Build SVDpp model and train it.
+    sim_options = {'name': 'pearson', 'user_based': True}
+    algorithm = SVDpp(n_factors=10, n_epochs=400, lr_all=0.0001, reg_all=0.001)
+    algorithm.fit(train_ratings)
 
-	# Get submission file format
-	print("Producing submission file...")
-	sample_submission_path = "../../data/submission.csv"
-	test_ratings = load_data(sample_submission_path, sparse_matrix=False)
+    # Get submission file format
+    print("Producing submission file...")
+    sample_submission_path = "../../data/submission.csv"
+    test_ratings = load_data(sample_submission_path, sparse_matrix=False)
 
-	rows, cols = np.nonzero(test_ratings)
-	zp = list(zip(rows, cols))
-	zp.sort(key = lambda tup: tup[1])
+    rows, cols = np.nonzero(test_ratings)
+    zp = list(zip(rows, cols))
+    zp.sort(key = lambda tup: tup[1])
 
-	# Create submission file
-	submission_path = "./submissions/surprise_svdpp.csv"
-	csvfile = open(submission_path, 'w')
+    # Create submission file
+    submission_path = "./submissions/surprise_svdpp.csv"
+    csvfile = open(submission_path, 'w')
 
-	fieldnames = ['Id', 'Prediction']
-	writer = csv.DictWriter(csvfile, delimiter=",", \
-						fieldnames=fieldnames, lineterminator = '\n')
-	writer.writeheader()
+    fieldnames = ['Id', 'Prediction']
+    writer = csv.DictWriter(csvfile, delimiter=",",
+                        fieldnames=fieldnames, lineterminator = '\n')
+    writer.writeheader()
 
-	counter = 0
-	for row, col in zp:
+    counter = 0
+    for row, col in zp:
 
-		counter += 1
-		if counter % 1000 == 0:
-			print("Progress: %d/%d" % (counter, len(rows)))
+        counter += 1
+        if counter % 1000 == 0:
+            print("Progress: %d/%d" % (counter, len(rows)))
 
-		uid = str(row)
-		iid = str(col)
-		val = int(round(algorithm.predict(uid, iid)[3]))
+        uid = str(row)
+        iid = str(col)
+        val = int(round(algorithm.predict(uid, iid)[3]))
 
-		if val > 5:
-			val = 5
-		elif val < 1:
-			val = 1
-		
-		r = "r" + str(row + 1)
-		c = "c" + str(col + 1)
-		writer.writerow({'Id': r + "_" + c, 'Prediction': val})
+        if val > 5:
+            val = 5
+        elif val < 1:
+            val = 1
+        
+        r = "r" + str(row + 1)
+        c = "c" + str(col + 1)
+        writer.writerow({'Id': r + "_" + c, 'Prediction': val})
+
+    csvfile.close()
 
 
 if __name__ == '__main__':
-	
-	if len(sys.argv) == 2:
-		if sys.argv[1] == '--tune':
-			tune()
-		elif sys.argv[1] == '--test':
-			test()
-		elif sys.argv[1] == '--crossval':
-			test_crossval()
-		elif sys.argv[1] == '--submit':
-			submit()
-		elif sys.argv[1] == '--tunegs':
-			tune_gs()
-		else:
-			test()
-	else:
-		test()
+    
+    if len(sys.argv) == 2:
+        if sys.argv[1] == '--tune':
+            tune()
+        elif sys.argv[1] == '--test':
+            test()
+        elif sys.argv[1] == '--crossval':
+            test_crossval()
+        elif sys.argv[1] == '--submit':
+            submit()
+        elif sys.argv[1] == '--tunegs':
+            tune_gs()
+        else:
+            test()
+    else:
+        test()

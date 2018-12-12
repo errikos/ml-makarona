@@ -130,6 +130,9 @@ def split_data(p_test=0.1, seed=988):
         for item in selects:
             testwriter.writerow({'User': user, 'Item': item, \
                                  'Rating': ratings[user, item]})
+
+    trainfile.close()
+    testfile.close()
             
 
 def calculate_rmse(algorithm, true_ratings_path):
