@@ -30,7 +30,7 @@ def tune():
         ratings, test_size=test_size, random_state=seed)
 
     best_param, best_rmse = -1, 100
-    for epochs in range(20, 100, 20):
+    for epochs in range(20, 200, 20):
 
         # Build KNN item based model.
         algorithm = CoClustering(n_epochs=epochs)

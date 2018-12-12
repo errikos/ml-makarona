@@ -25,13 +25,13 @@ def load_data(path_dataset, sparse_matrix=True):
 
     csvfile = open("./data/surprise_item_based_bsln_top50_clean.csv", 'w')
 
-    fieldnames = ['Item', 'User', 'Rating']
-    writer = csv.DictWriter(
-        csvfile, delimiter=",", fieldnames=fieldnames, lineterminator='\n')
+    fieldnames = ['User', 'Item', 'Rating']
+    writer = csv.DictWriter(csvfile, delimiter=",",
+                        fieldnames=fieldnames, lineterminator = '\n')
     writer.writeheader()
 
-    for item, user, rating in data:
-        writer.writerow({'Item': item - 1, 'User': user - 1, 'Rating': rating})
+    for user, item, rating in data: 
+        writer.writerow({'User': user - 1, 'Item': item - 1, 'Rating': rating})
 
     csvfile.close()
 

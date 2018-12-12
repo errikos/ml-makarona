@@ -110,6 +110,21 @@ def load_clean_vec(path_dataset):
     return users, items, ratings
 
 
+def write_clean(data, write_path):
+
+    csvfile = open(write_path, 'w')
+
+    fieldnames = ['User', 'Item', 'Rating']
+    writer = csv.DictWriter(csvfile, delimiter=",",
+                            fieldnames=fieldnames, lineterminator = '\n')
+    writer.writeheader()
+
+    for user, item, rating in data: 
+        writer.writerow({'User': user + 1, 'Item': item + 1, 'Rating': rating})
+
+    csvfile.close()
+
+
 def split_data(p_test=0.1, seed=988):
     """
         Load and split original ratings to training and test sets and store 
