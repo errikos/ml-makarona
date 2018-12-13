@@ -80,7 +80,7 @@ def load_clean(path_dataset):
     min_row, max_row, min_col, max_col = statistics(data)
 
     # Build rating matrix.
-    ratings = np.zeros((max_row, max_col))
+    ratings = np.zeros((max_row+1, max_col+1))
 
     for row, col, rating in data:
         ratings[row, col] = rating
@@ -121,7 +121,7 @@ def write_clean(data, write_path):
     writer.writeheader()
 
     for user, item, rating in data: 
-        writer.writerow({'User': user + 1, 'Item': item + 1, 'Rating': rating})
+        writer.writerow({'User': user, 'Item': item, 'Rating': rating})
 
     csvfile.close()
 

@@ -29,5 +29,6 @@ test_ratings_path = "./data/988_test.csv"
 # ratings_path = "./data/surprise_item_based_bsln_top50_full_enhanced_clean.csv"
 users, items, test_ratings = load_clean_vec(test_ratings_path)
 
-results_file_names = []
+offset_path = "./data/intermediate_988/"
+results_file_names = [offset_path+"intermediate_item_based"]
 
