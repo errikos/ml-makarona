@@ -1,0 +1,3 @@
+Best RMSE:0.999116827925
+Params:{'k': 400, 'sim_options': {'name': 'pearson_baseline', 'user_based': True}}
+
