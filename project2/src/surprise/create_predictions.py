@@ -13,13 +13,19 @@ from helpers import load_data, calculate_rmse, write_clean, load_clean
 from tune_grid_search import tune_grid_search
 
 
-def clean_predictions_to_file(sample_submission_path, input_path, output_path, algo):
+def clean_predictions_to_file(sample_submission_path, train_path, output_path, algo, 
+                              load_subm_clean=True):
 
     # Retrieve the trainset.
     reader = Reader(line_format='user item rating', sep=',', skip_lines=1)
-    train_data = Dataset.load_from_file(input_path+"988_training.csv", reader)
-    #train_data = load_clean(input_path+"988_training.csv")
-    test_data = load_clean(input_path+"988_test.csv")
+    #train_data = Dataset.load_from_file(train_path+"988_training.csv", reader)
+    train_data = Dataset.load_from_file(train_path, reader)
+    if load_subm_clean:
+        print("USING A CLEAN SUBMISSION FILE")
+        test_data = load_clean(sample_submission_path)
+    else:
+        print("USING AN ORIGINAL FORMAT SUBMISSION FILE")
+        test_data = load_data(sample_submission_path, sparse_matrix=False)
     # Build KNN item based model and train it.
     algorithm = algo
     train_ratings = train_data.build_full_trainset()
@@ -27,7 +33,6 @@ def clean_predictions_to_file(sample_submission_path, input_path, output_path, a
 
     # Get submission file format
     print("Producing clean intermediate file...")
-    sample_submission_path = "../../data/submission.csv"
 
     rows, cols = np.nonzero(test_data)
     zp = list(zip(rows, cols))

@@ -11,6 +11,8 @@ from surprise.model_selection import cross_validate
 
 from helpers import load_data, calculate_rmse
 from tune_grid_search import tune_grid_search
+from create_predictions import clean_predictions_to_file 
+
 
 sim_options = {'name': 'pearson_baseline', 'user_based': False}
 bsl_options = {'method': 'als', 'n_epochs': 100, 'reg_u': 0.09, 'reg_i': 0.09}
@@ -242,6 +244,11 @@ if __name__ == '__main__':
             submit()
         elif sys.argv[1] == '--tunegs':
             tune_gs()
+        elif sys.argv[1] == '--intermediate':
+            clean_predictions_to_file("./data/988_test.csv", 
+                                    "./data/",
+                                    "./data/intermediate_988/interm_item_based_bsl.csv",
+                                    KNNBaseline(k=90, sim_options=sim_options))
         else:
             test()
     else:

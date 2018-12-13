@@ -11,6 +11,8 @@ from surprise.model_selection import cross_validate
 
 from helpers import load_data
 from tune_grid_search import tune_grid_search
+from create_predictions import clean_predictions_to_file 
+
 
 # Load ratings
 ratings_path = "./data/train_clean.csv"
@@ -162,6 +164,11 @@ if __name__ == '__main__':
             submit()
         elif sys.argv[1] == '--tunegs':
             tune_gs()
+        elif sys.argv[1] == '--intermediate':
+            clean_predictions_to_file("./data/988_test.csv", 
+                                    "./data/",
+                                    "./data/intermediate_988/interm_coclostering.csv",
+                                    CoClustering()
         else:
             test()
     else:

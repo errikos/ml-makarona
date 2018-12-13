@@ -100,7 +100,7 @@ def test_crossval(cv=2, k=50):
     cross_validate(algorithm, ratings, measures=['RMSE'], cv=cv, verbose=True)
 
 
-def submit(K=50):
+def submit(K=90):
     print("Creating submission...")
 
     # Retrieve the trainset.
@@ -165,9 +165,15 @@ if __name__ == '__main__':
             tune_gs()
         elif sys.argv[1] == '--intermediate':
             clean_predictions_to_file("./data/988_test.csv", 
-                                    "./data/",
+                                    "./data/988_training.csv",
                                     "./data/intermediate_988/interm_item_based.csv",
                                     KNNWithMeans(k=90, sim_options=sim_options))
+        elif sys.argv[1] == '--blend_pred':
+            clean_predictions_to_file("./../../data/submission.csv", 
+                                    "./data/train_clean.csv",
+                                    "./submissions/blend/item_based.csv",
+                                    KNNWithMeans(k=90, sim_options=sim_options),
+                                    load_subm_clean=False)
         else:
             test()
     else:

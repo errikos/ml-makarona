@@ -10,6 +10,7 @@ from surprise.model_selection import train_test_split
 from surprise.model_selection import cross_validate
 
 from helpers import load_data
+from create_predictions import clean_predictions_to_file 
 
 # Load ratings
 ratings_path = "./data/train_clean.csv"
@@ -109,6 +110,11 @@ if __name__ == '__main__':
             test_crossval(2)
         elif sys.argv[1] == '--submit':
             submit()
+        elif sys.argv[1] == '--intermediate':
+            clean_predictions_to_file("./data/988_test.csv", 
+                                    "./data/",
+                                    "./data/intermediate_988/interm_slope.csv",
+                                    SlopeOne())
         else:
             test()
     else:

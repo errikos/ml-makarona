@@ -8,6 +8,8 @@ from surprise import Reader
 from surprise import accuracy
 from surprise.model_selection import train_test_split
 from surprise.model_selection import cross_validate
+from create_predictions import clean_predictions_to_file 
+
 
 from helpers import load_data
 from tune_grid_search import tune_grid_search
@@ -171,6 +173,11 @@ if __name__ == '__main__':
             submit()
         elif sys.argv[1] == '--tunegs':
             tune_gs()
+        elif sys.argv[1] == '--intermediate':
+            clean_predictions_to_file("./data/988_test.csv", 
+                                    "./data/",
+                                    "./data/intermediate_988/svd.csv",
+                                    SVD(n_factors=10, n_epochs=400, lr_all=0.0002, reg_all=0.009))
         else:
             test()
     else:
