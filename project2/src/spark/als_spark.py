@@ -7,9 +7,9 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder.appName('ALS').getOrCreate()
 
 
-MAX_ITER=50
-LAMBDA=0.05
-RANK=10
+MAX_ITER = 50
+LAMBDA = 0.05
+RANK = 10
 
 
 sc = SparkContext.getOrCreate()
@@ -28,7 +28,7 @@ def form_id(row_id, col_id):
 
 
 def _clip(n, lower=1, upper=5):
-    return min(5, max(1, n))
+    return min(upper, max(lower, n))
 
 
 def form_pred(p):
@@ -76,17 +76,3 @@ wantedIds = submissionDF.join(userRecsDF, on='Id')
 wantedIds.sort('Id').write.csv('Spark_ALS.csv')
 
 print("Root-mean-square error = " + str(rmse))
-
-# Generate top 10 user recommendations for each movie
-# movieRecs = model.recommendForAllItems(10)
-
-# user = ratings.select(als.getUserCol()).filter(ratings.userId == 0)
-# userRecs = model.recommendForUserSubset(user, 10)
-# print(userRecs.collect())
-
-# Generate top 10 movie recommendations for a specified set of users
-# users = ratings.select(als.getUserCol()).distinct().limit(3)
-# userSubsetRecs = model.recommendForUserSubset(users, 10)
-# Generate top 10 user recommendations for a specified set of movies
-# movies = ratings.select(als.getItemCol()).distinct().limit(3)
-# movieSubSetRecs = model.recommendForItemSubset(movies, 10)
