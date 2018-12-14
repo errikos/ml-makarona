@@ -58,9 +58,9 @@ def tune():
 
 def tune_gs():
     param_grid = {
-        'n_epochs': range(10, 200, 10),
-        'n_cltr_u': range(1, 10),
-        'n_cltr_i': range(1, 10)
+        'n_epochs': range(100, 200, 10),
+        'n_cltr_u': range(2, 10),
+        'n_cltr_i': range(2, 10)
     }
 
     tune_grid_search(
