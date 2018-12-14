@@ -80,7 +80,7 @@ def load_clean(path_dataset):
     min_row, max_row, min_col, max_col = statistics(data)
 
     # Build rating matrix.
-    ratings = np.zeros((max_row+1, max_col+1))
+    ratings = np.zeros((max_row + 1, max_col + 1))
 
     for row, col, rating in data:
         ratings[row, col] = rating

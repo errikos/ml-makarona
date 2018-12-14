@@ -9,7 +9,7 @@ import csv
 
 # TODO Make this generic, to accommodate all prediction techniques?
 def create_submission(path, predictions):
-    # TODO: Check if there are required movies thet we dsicard as non valid bcs <10 ratings
+    # TODO: Check if there are required movies thet we discard as non valid bcs <10 ratings
     # load the sample submissionf file in order to know which ratings need to be written to csv
     path_sample_sub = "../data/submission.csv"
     submission_data = load_data(path_sample_sub)

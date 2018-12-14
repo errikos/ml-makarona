@@ -104,11 +104,16 @@ def test_crossval(cv=2):
 def submit():
     print("Creating submission...")
 
+    n_epochs=140 
+    n_cltr_u=2 
+    n_cltr_i=9
+
     # Retrieve the trainset.
     train_ratings = ratings.build_full_trainset()
 
     # Build KNN item based model and train it.
-    algorithm = CoClustering()
+    algorithm = CoClustering(n_epochs=n_epochs, n_cltr_u=n_cltr_u, 
+                             n_cltr_i=n_cltr_i)
     algorithm.fit(train_ratings)
 
     # Get submission file format
@@ -121,7 +126,9 @@ def submit():
     zp.sort(key=lambda tup: tup[1])
 
     # Create submission file
-    submission_path = "./submissions/surprise_coclustering.csv"
+    submission_path = "./submissions/surprise_coclustering_" + str(n_epochs) \
+                         + "_" + str(n_cltr_u) + "_" + str(n_cltr_i) + ".csv"
+                         
     csvfile = open(submission_path, 'w')
 
     fieldnames = ['Id', 'Prediction']
@@ -172,4 +179,4 @@ if __name__ == '__main__':
         else:
             test()
     else:
-        tune()
+        submit()
