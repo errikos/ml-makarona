@@ -1,152 +1,103 @@
-# -*- coding: utf-8 -*-
-"""some functions for help."""
-
-from itertools import groupby
-
+"""
+A collection of helper functions, shared among the other scripts.
+"""
 import numpy as np
-import scipy.sparse as sp
-import csv
-
-# TODO Make this generic, to accommodate all prediction techniques?
-def create_submission(path, predictions):
-    # TODO: Check if there are required movies thet we discard as non valid bcs <10 ratings
-    # load the sample submissionf file in order to know which ratings need to be written to csv
-    path_sample_sub = "../data/submission.csv"
-    submission_data = load_data(path_sample_sub)
-
-    rows, cols = submission_data.nonzero()
-    zp = list(zip(rows, cols))
-    zp.sort(key=lambda tup: tup[1])
-
-    with open(path, 'w') as csvfile:
-            fieldnames = ['Id', 'Prediction']
-            writer = csv.DictWriter(csvfile, delimiter=",", fieldnames=fieldnames, lineterminator = '\n')
-            writer.writeheader()
-            for row, col in zp:
-                r = "r" + str(row+1)
-                c = "c" + str(col+1)
-                val = int(round(predictions[row,col]))
-                if val > 5:
-                    val = 5
-                elif val < 1:
-                    val = 1
-                writer.writerow({'Id': r+"_"+c, 'Prediction': val})
+import pandas as pd
 
 
-def read_txt(path):
-    """read text file from path."""
-    with open(path, "r") as f:
-        return f.read().splitlines()
+def raw_line(line):
+    """Parse one line of the dataset into a (user, item, rating) triplet of strings."""
+    id_, rating = line.strip().split(',')
+    user, item = map(lambda x: x[1:], id_.split('_'))
+    return user, item, rating
 
 
-def load_data(path_dataset, sparse_matrix=True):
-    '''
-        Load data in text format, one rating per line, and store in a
-        sparse matrix or np.array 
-    '''
-    data = read_txt(path_dataset)[1:]
-    return preprocess_data(data, sparse_matrix)
+def typed_line(line):
+    """Parse one line of the dataset into a typed (user, item, rating) triplet."""
+    user, item, rating = raw_line(line)
+    return int(user), int(item), float(rating)
 
 
-def preprocess_data(data, sparse_matrix=True):
-    """preprocessing the text data, conversion to numerical array format."""
-    def deal_line(line):
-        pos, rating = line.split(',')
-        row, col = pos.split("_")
-        row = row.replace("r", "")
-        col = col.replace("c", "")
-        return int(row), int(col), float(rating)
+def read_lines(path, header=True):
+    """Open the dataset file and return its lines (raw)."""
+    with open(path, 'r') as f:
+        if not header:
+            f.readline()  # skip header
+        return f.readlines()
 
-    def statistics(data):
-        row = set([line[0] for line in data])
-        col = set([line[1] for line in data])
-        return min(row), max(row), min(col), max(col)
 
-    # parse each line
-    data = [deal_line(line) for line in data]
-    #print(data[:10])
+def normalize(input_path, output_path):
+    with open(input_path, 'r') as f:
+        f.readline()  # skip header
+        triplets = map(raw_line, f.readlines())
+    with open(output_path, 'w+') as f:
+        f.write('user,item,rating\n')  # write header
+        f.writelines('{u},{i},{r}\n'.format(u=str(int(u)-1), i=str(int(i)-1), r=float(r)) for u, i, r in triplets)
 
-    # do statistics on the dataset.
-    min_row, max_row, min_col, max_col = statistics(data)
-    # print("number of items: {}, number of users: {}".format(max_row, max_col))
 
-    # build rating matrix.
-    if sparse_matrix:
-        ratings = sp.lil_matrix((max_row, max_col))
-    else:
-        ratings = np.zeros((max_row, max_col))
+def denormalize(input_path, output_path):
+    with open(input_path, 'r') as f:
+        f.readline()  # skip header
+        triplets = [line.strip().split(',') for line in f.readlines()]
+    with open(output_path, 'w+') as f:
+        f.write('Id,Prediction\n')
+        f.writelines('c{u}_r{i},{r}\n'.format(u=str(int(u)+1), i=str(int(i)+1), r=int(r)) for u, i, r in triplets)
 
-    for row, col, rating in data:
-        ratings[row - 1, col - 1] = rating
+
+def write_normalized(output_path, data):
+    with open(output_path, 'w+') as f:
+        f.write('user,item,rating\n')
+        f.writelines('{u},{i},{r}\n'.format(u=u, i=i, r=r) for u, i, r in data)
+
+
+def read_to_df(path):
+    """Read the dataset into a pandas DataFrame, one rating triplet per row."""
+    return pd.DataFrame.from_records(map(typed_line, read_lines(path, header=False)),
+                                     columns=['user', 'item', 'rating'])
+
+
+def read_to_np(path):
+    """Read a normalized dataset into a numpy array. Rows are users, columns are items, values are ratings."""
+    data = [(int(user), int(item), float(rating))
+            for user, item, rating in map(lambda r: r.split(','), read_lines(path, header=False))]
+    shape = max(set(t[0] for t in data))+1, max(set(t[1] for t in data))+1  # get data shape (rows, columns)
+    ratings = np.zeros(shape)
+    for user, item, rating in data:  # fill array with data
+        ratings[user, item] = rating
     return ratings
 
 
-def split_data(ratings, p_test=0.1):
+def tuples_to_df(ts):
+    """Convert a collection of (user, item, rating) tuples into a pandas DataFrame."""
+    return pd.DataFrame.from_records(ts, columns=['user', 'item', 'rating'])
+
+
+def split_normalized_data(path, ratio, seed=None):
+    """Split the dataset into training/testing parts based on the provided training ratio.
+
+    Return two lists of (user, item, rating) triplets: the training and testing sets, respectively.
     """
-        split the ratings to training data and test data.
-    """
-    # set seed
-    np.random.seed(988)
-    
-    # init
-    num_rows, num_cols = ratings.shape
-    train = np.zeros((num_rows, num_cols))
-    test = np.zeros((num_rows, num_cols))
-    print("Shape of original ratings (# of row, # of col): {}"\
-          .format(ratings.shape))
+    ratings = read_to_np(path)
+    np.random.seed(seed)
+    nz_users, nz_items = np.nonzero(ratings)  # get indices of non-zero ratings
 
-    # nz_items, nz_users = ratings.nonzero()
-    nz_items, nz_users = np.nonzero(ratings)
-    
-    # split the data
-    for user in set(nz_users):
-        # randomly select a subset of ratings
-        
-        row = np.nonzero(ratings[:, user])[0]
-        
-        selects = np.random.choice(row, size = int(len(row) * p_test))
-        residual = list(set(row) - set(selects))
+    def split_user_items(u):
+        items, = np.nonzero(ratings[u])
+        selected = np.random.choice(items, size=int(len(items) * ratio), replace=False)
+        residual = set(items) - set(selected)
+        return selected, residual
 
-        # add to train set
-        train[residual, user] = ratings[residual, user]
+    training, testing = [], []
+    for user in np.unique(nz_users):
+        selected, residual = split_user_items(user)
+        for item in selected:
+            training.append((user, item, ratings[user, item]))
+        for item in residual:
+            testing.append((user, item, ratings[user, item]))
 
-        # add to test set
-        test[selects, user] = ratings[selects, user]
-
-    print("Total number of nonzero elements in original data: {v}"\
-          .format(v = np.count_nonzero(ratings)))
-    print("Total number of nonzero elements in train data: {v}"\
-          .format(v=np.count_nonzero(train)))
-    print("Total number of nonzero elements in test data: {v}"\
-          .format(v=np.count_nonzero(test)))
-
-    return train, test
+    key = lambda x: (x[1], x[0])
+    return sorted(training, key=key), sorted(testing, key=key)
 
 
-def group_by(data, index):
-    """group list of list by a specific index."""
-    sorted_data = sorted(data, key=lambda x: x[index])
-    groupby_data = groupby(sorted_data, lambda x: x[index])
-    return groupby_data
-
-
-def build_index_groups(train):
-    """build groups for nnz rows and cols."""
-    nz_row, nz_col = train.nonzero()
-    nz_train = list(zip(nz_row, nz_col))
-
-    grouped_nz_train_byrow = group_by(nz_train, index=0)
-    nz_row_colindices = [(g, np.array([v[1] for v in value]))
-                         for g, value in grouped_nz_train_byrow]
-
-    grouped_nz_train_bycol = group_by(nz_train, index=1)
-    nz_col_rowindices = [(g, np.array([v[0] for v in value]))
-                         for g, value in grouped_nz_train_bycol]
-    return nz_train, nz_row_colindices, nz_col_rowindices
-
-
-def calculate_mse(real_label, prediction):
-    """calculate MSE."""
-    # Kostas: added int(round())
-    t = real_label - int(round(prediction))
-    return 1.0 * t.dot(t.T)
+def clip(n, low=1.0, high=5.0):
+    return min(max(n, low), high)
