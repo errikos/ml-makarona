@@ -107,7 +107,7 @@ def blend(testing_dataset_path, testing_prediction_files, submission_prediction_
               help='Read model predictions for testing dataset from this directory.')
 @click.option('-sp', '--submission-predictions', 'submission_predictions_path', type=click.Path(exists=True),
               required=True, help='Read model predictions for submission dataset from this directory.')
-@click.option('-l', '--lambda', 'lambda_', type=float, default=0.0007,
+@click.option('-l', '--lambda', 'lambda_', type=float, default=0.001,
               help='Regularisation parameter (λ) value for ridge regression (default: 0.0007).')
 @click.option('-o', '--output', 'output_file', type=click.Path(exists=False), required=True,
               help='Write the blended submission file to this directory.')
