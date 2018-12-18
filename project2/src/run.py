@@ -37,7 +37,7 @@ def _create_dirs():
 def _prompt_to_continue():
     try:
         print()
-        input("Please press ENTER to continue... ")
+        input('Please press ENTER to continue... ')
     except KeyboardInterrupt:
         print()
         print('Aborting...')

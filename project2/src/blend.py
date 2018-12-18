@@ -127,8 +127,9 @@ def main(ctx, testing_path, testing_predictions_path, submission_predictions_pat
         raise click.Abort()
     _print_files(testing_prediction_files)
     _print_files(submission_prediction_files)
-    if click.confirm('Is this OK?'):
-        blend(testing_path, testing_prediction_files, submission_prediction_files, output_file, lambda_)
+
+    input('Please press ENTER to continue... ')
+    blend(testing_path, testing_prediction_files, submission_prediction_files, output_file, lambda_)
 
 
 if __name__ == '__main__':
