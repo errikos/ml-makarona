@@ -112,7 +112,7 @@ def blend(testing_dataset_path, testing_prediction_files, submission_prediction_
 @click.option('-o', '--output', 'output_file', type=click.Path(exists=False), required=True,
               help='Write the blended submission file to this directory.')
 @click.pass_context
-def cli(ctx, testing_path, testing_predictions_path, submission_predictions_path, output_file, lambda_, **kwargs):
+def main(ctx, testing_path, testing_predictions_path, submission_predictions_path, output_file, lambda_, **kwargs):
     ctx.obj.update(**kwargs)
     testing_prediction_files = _list_files(testing_predictions_path)
     submission_prediction_files = _list_files(submission_predictions_path)
@@ -132,4 +132,4 @@ def cli(ctx, testing_path, testing_predictions_path, submission_predictions_path
 
 
 if __name__ == '__main__':
-    cli(obj={})
+    main(obj={})
