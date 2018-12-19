@@ -8,11 +8,11 @@ import helpers
 class Model(object):
     """Generic model class for fitting a recommendation model."""
 
-    def __init__(self, training_path, predict_path, output_path, **kwargs):
+    def __init__(self, **kwargs):
         """Initialize a Model object."""
-        self.training_path = training_path
-        self.predict_path = predict_path
-        self.output_path = output_path
+        self.training_path = kwargs.get('train_data_path')
+        self.predict_path = kwargs.get('predict_data_path')
+        self.output_path = kwargs.get('output_path')
 
     def train(self, load_fn, train_fn, predict_fn, store_fn, **options):
         """Given the functions indicated below, load the training and prediction datasets,
@@ -76,7 +76,7 @@ def cli(ctx, **kwargs):
 @click.pass_context
 def als(ctx, **params):
     import spark.als as als_spark
-    model = Model(ctx.obj['train_data_path'], ctx.obj['predict_data_path'], ctx.obj['output_path'])
+    model = Model(**ctx.obj)
     model.train(als_spark.load_ratings, als_spark.train, als_spark.predict, helpers.write_normalized, **params)
 
 
@@ -86,7 +86,7 @@ def als(ctx, **params):
 @click.option('-ic', '--item-clusters', 'n_cltr_i', type=int, required=True, help='The number of item clusters.')
 @click.pass_context
 def co_cluster(ctx, **params):
-    model = SurpriseModel(ctx.obj['train_data_path'], ctx.obj['predict_data_path'], ctx.obj['output_path'])
+    model = SurpriseModel(**ctx.obj)
     model.train(surprise.CoClustering, **params)
 
 
@@ -95,7 +95,7 @@ def co_cluster(ctx, **params):
 @click.option('-k', '--neighbours', 'k', type=int, required=True, help='The number of neighbours.')
 @click.pass_context
 def item_based(ctx, with_baseline, **params):
-    model = SurpriseModel(ctx.obj['train_data_path'], ctx.obj['predict_data_path'], ctx.obj['output_path'])
+    model = SurpriseModel(**ctx.obj)
     model.train(**{
         'train_class': surprise.KNNWithMeans if not with_baseline else surprise.KNNBaseline,
         'sim_options': {'name': 'pearson' if not with_baseline else 'pearson_baseline', 'user_based': False},
@@ -110,7 +110,7 @@ def item_based(ctx, with_baseline, **params):
 @click.option('-r', '--reg-term', 'reg_all', type=float, required=True, help='The regularization term.')
 @click.pass_context
 def svd(ctx, **params):
-    model = SurpriseModel(ctx.obj['train_data_path'], ctx.obj['predict_data_path'], ctx.obj['output_path'])
+    model = SurpriseModel(**ctx.obj)
     model.train(surprise.SVD, **params)
 
 
@@ -121,7 +121,7 @@ def svd(ctx, **params):
 @click.option('-r', '--reg-term', 'reg_all', type=float, required=True, help='The regularization term.')
 @click.pass_context
 def svdpp(ctx, **params):
-    model = SurpriseModel(ctx.obj['train_data_path'], ctx.obj['predict_data_path'], ctx.obj['output_path'])
+    model = SurpriseModel(**ctx.obj)
     model.train(surprise.SVDpp, **params)
 
 
@@ -130,7 +130,7 @@ def svdpp(ctx, **params):
 @click.option('-k', '--neighbours', type=int, required=True, help='The number of neighbours.')
 @click.pass_context
 def user_based(ctx, with_baseline, **params):
-    model = SurpriseModel(ctx.obj['train_data_path'], ctx.obj['predict_data_path'], ctx.obj['output_path'])
+    model = SurpriseModel(**ctx.obj)
     model.train(**{
         'train_class': surprise.KNNWithMeans if not with_baseline else surprise.KNNBaseline,
         'sim_options': {'name': 'pearson' if not with_baseline else 'pearson_baseline', 'user_based': True},

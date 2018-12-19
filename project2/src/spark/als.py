@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 import click
-import os
 
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.recommendation import ALS
-from pyspark.sql import Row
 
 from pyspark.context import SparkContext
 from pyspark.sql import SparkSession
