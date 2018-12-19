@@ -21,10 +21,10 @@ def _print_files(files):
 
 def ridge_regression(y, tx, lambda_):
     """Ridge regression using normal equations."""
-    N, D = tx.shape
-    lambda_ = 2 * N * lambda_
+    n, d = tx.shape
+    lambda_ = 2 * n * lambda_
 
-    a = tx.T.dot(tx) + lambda_ * np.eye(D)
+    a = tx.T.dot(tx) + lambda_ * np.eye(d)
     b = tx.T.dot(y)
 
     return np.linalg.solve(a, b)
@@ -50,10 +50,10 @@ def model_combinations(models, min_k=1):
 def evaluate_combination(combination, real_ratings, lambda_):
     model_names, model_predictions = list(zip(*combination))
     y = np.array(real_ratings)
-    X = np.array(model_predictions).transpose()
+    tx = np.array(model_predictions).transpose()
     # compute weights and RMSE
-    w = ridge_regression(y, X, lambda_)
-    rmse = compute_rmse(y, X.dot(w))
+    w = ridge_regression(y, tx, lambda_)
+    rmse = compute_rmse(y, tx.dot(w))
     return model_names, w, rmse
 
 
@@ -63,8 +63,8 @@ def get_submission_id_pairs(submission_prediction_files):
     return map(get_user_item_pair, helpers.read_lines(f, header=False))
 
 
-def make_weighted_predictions(submission_ratings, w):
-    model_names, model_predictions = list(zip(*submission_ratings.items()))
+def make_weighted_predictions(submission_ratings, comb_names, w):
+    model_names, model_predictions = list(zip(*[(name, submission_ratings[name]) for name in comb_names]))
     X = np.array(model_predictions).transpose()
     return X.dot(w)
 
@@ -82,18 +82,18 @@ def blend(testing_dataset_path, testing_prediction_files, submission_prediction_
     blended_ratings = [evaluate_combination(c, testing_ratings, lambda_)
                        for c in model_combinations(testing_predictions)]
     # reveal optimal combination and its weight vector
-    opt_comb, opt_w, opt_rmse = min(blended_ratings, key=lambda t: t[2])
+    opt_comb_names, opt_w, opt_rmse = min(blended_ratings, key=lambda t: t[2])
 
     print('Optimal blending is:')
-    spec_len = max(map(len, opt_comb))
+    spec_len = max(map(len, opt_comb_names))
     spec = '  - {model:%d} x {w}' % spec_len
-    for model, w in zip(opt_comb, opt_w):
+    for model, w in zip(opt_comb_names, opt_w):
         print(spec.format(model=model, w=w))
     print('With RMSE:', opt_rmse)
 
     # prepare submission user/item pairs and get weighted predictions
     submission_user_item_pairs = get_submission_id_pairs(submission_prediction_files)
-    weighted_submission_predictions = make_weighted_predictions(submission_predictions, opt_w)
+    weighted_submission_predictions = make_weighted_predictions(submission_predictions, opt_comb_names, opt_w)
 
     helpers.write_normalized(output_file, ((u, i, int(round(r)))
                                            for (u, i), r in zip(submission_user_item_pairs,
