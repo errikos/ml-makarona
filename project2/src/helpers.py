@@ -41,7 +41,7 @@ def denormalize(input_path, output_path):
         triplets = [line.strip().split(',') for line in f.readlines()]
     with open(output_path, 'w+') as f:
         f.write('Id,Prediction\n')
-        f.writelines('c{u}_r{i},{r}\n'.format(u=str(int(u)+1), i=str(int(i)+1), r=int(r)) for u, i, r in triplets)
+        f.writelines('r{u}_c{i},{r}\n'.format(u=str(int(u)+1), i=str(int(i)+1), r=int(r)) for u, i, r in triplets)
 
 
 def write_normalized(output_path, data):
