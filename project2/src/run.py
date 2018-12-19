@@ -16,7 +16,7 @@ OUT_DIR = os.path.join('.', 'out')
 
 
 MODELS = {
-    # 'ALS': {'cmd': train.als, 'args': {'epochs': 100, 'lambda_': 0.09, 'rank': 50}},
+    'ALS': {'cmd': train.als, 'args': {'epochs': 100, 'lambda_': 0.009, 'rank': 10}},
     'Co-Clustering': {'cmd': train.co_cluster, 'args': {'n_epochs': 150, 'n_cltr_u': 2, 'n_cltr_i': 7}},
     # 'Item-based-KNN': {'cmd': train.item_based, 'args': {'k': 90}},
     # 'Item-based-KNN-baseline': {'cmd': train.item_based, 'args': {'k': 90, 'with_baseline': True}},

@@ -56,7 +56,7 @@ class Tuner(object):
             # equivalent to nested for-loops for all parameter ranges
             selected_params = dict(zip(self.params.keys(), param_values))
             print_dict(selected_params, prefix='Running with: ')
-            model = train_fn(training, {**selected_params, **options})
+            model = train_fn(training, **{**selected_params, **options})
             rmse = eval_fn(model, testing)
             print('RMSE:', rmse)
             results.append((selected_params, rmse))

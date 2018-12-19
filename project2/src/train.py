@@ -14,6 +14,25 @@ class Model(object):
         self.predict_path = predict_path
         self.output_path = output_path
 
+    def train(self, load_fn, train_fn, predict_fn, store_fn, **options):
+        """Given the functions indicated below, load the training and prediction datasets,
+        train with the training dataset and predict the values for the prediction dataset.
+        Write results in output path.
+
+        :param load_fn: A function that, given the input path, returns a dataset object.
+        :param train_fn: A function that, given the training dataset, returns the trained model object.
+        :param predict_fn: A function that, given the trained model and the prediction dataset, returns the
+                           predicted values for all (user, item) pairs in the prediction dataset.
+        :param store_fn: A function that, given the predicted values and the output path, writes the predicted
+                         values to that path.
+        :param options: Any additional options (key-word arguments) to pass to the training function.
+        """
+        training_dataset = load_fn(self.training_path)
+        prediction_dataset = load_fn(self.predict_path)
+        model = train_fn(training_dataset, **options)
+        predictions = sorted(predict_fn(model, prediction_dataset), key=lambda t: (t[1], t[0]))
+        store_fn(self.output_path, predictions)
+
 
 class SurpriseModel(Model):
     """Specialised class for surprise-based recommendation models."""
@@ -51,11 +70,14 @@ def cli(ctx, **kwargs):
 
 @cli.command(help='Fit the Alternating Least Squares algorithm (ALS).')
 @click.option('-e', '--epochs', 'epochs', type=int, required=True, help='The number of epochs (iterations).')
-@click.option('-l', '--lambda', 'lambda_', type=float,required=True,  help='The λ parameter.')
+@click.option('-l', '--lambda', 'lambda_', type=float, required=True,  help='The λ parameter.')
 @click.option('-r', '--rank', type=int, required=True, help='The rank (number of latent features).')
+@click.option('-s', '--seed', type=int, required=False, help='The random seed for the ALS algorithm.')
 @click.pass_context
 def als(ctx, **params):
+    import spark.als as als_spark
     model = Model(ctx.obj['train_data_path'], ctx.obj['predict_data_path'], ctx.obj['output_path'])
+    model.train(als_spark.load_ratings, als_spark.train, als_spark.predict, helpers.write_normalized, **params)
 
 
 @cli.command(help='Fit the Co-Clustering algorithm.')
