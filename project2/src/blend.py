@@ -19,6 +19,10 @@ def _print_files(files):
     print()
 
 
+def clip(n, lower=1, upper=5):
+    return min(upper, max(n, lower))
+
+
 def ridge_regression(y, tx, lambda_):
     """Ridge regression using normal equations."""
     n, d = tx.shape
@@ -67,8 +71,8 @@ def make_weighted_predictions(submission_ratings, comb_names, w):
     comb_names = set(comb_names)
     submission_ratings = filter(lambda x: x[0] in comb_names, submission_ratings)
     model_names, model_predictions = list(zip(*submission_ratings))
-    X = np.array(model_predictions).transpose()
-    return X.dot(w)
+    tx = np.array(model_predictions).transpose()
+    return tx.dot(w)
 
 
 def blend(testing_dataset_path, testing_prediction_files, submission_prediction_files, output_file, lambda_):
@@ -100,7 +104,7 @@ def blend(testing_dataset_path, testing_prediction_files, submission_prediction_
     submission_user_item_pairs = get_submission_id_pairs(submission_prediction_files)
     weighted_submission_predictions = make_weighted_predictions(submission_predictions, opt_comb, opt_w)
 
-    helpers.write_normalized(output_file, ((u, i, int(round(r)))
+    helpers.write_normalized(output_file, ((u, i, clip(int(round(r))))
                                            for (u, i), r in zip(submission_user_item_pairs,
                                                                 weighted_submission_predictions)))
 
