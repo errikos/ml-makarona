@@ -43,7 +43,7 @@ def load_ratings(path):
 
 def model_combinations(models, min_k=1):
     for i in range(min_k, len(models)+1):
-        for combination in itertools.combinations(models.items(), i):
+        for combination in itertools.combinations(models, i):
             yield combination
 
 
@@ -64,36 +64,41 @@ def get_submission_id_pairs(submission_prediction_files):
 
 
 def make_weighted_predictions(submission_ratings, comb_names, w):
-    model_names, model_predictions = list(zip(*[(name, submission_ratings[name]) for name in comb_names]))
+    comb_names = set(comb_names)
+    submission_ratings = filter(lambda x: x[0] in comb_names, submission_ratings)
+    model_names, model_predictions = list(zip(*submission_ratings))
     X = np.array(model_predictions).transpose()
     return X.dot(w)
 
 
 def blend(testing_dataset_path, testing_prediction_files, submission_prediction_files, output_file, lambda_):
+    testing_prediction_files = sorted(testing_prediction_files)
+    submission_prediction_files = sorted(submission_prediction_files)
+
     get_model_name = lambda p: os.path.splitext(os.path.basename(p))[0]
     # load the real ratings from the testing dataset
     testing_ratings = load_ratings(testing_dataset_path)
     # load the predictions from the testing and submission prediction files
-    testing_predictions = dict(zip(map(get_model_name, testing_prediction_files),
+    testing_predictions = list(zip(map(get_model_name, testing_prediction_files),
                                map(load_ratings, testing_prediction_files)))
-    submission_predictions = dict(zip(map(get_model_name, submission_prediction_files),
+    submission_predictions = list(zip(map(get_model_name, submission_prediction_files),
                                   map(load_ratings, submission_prediction_files)))
     # evaluate each combination of the model predictions w.r.t. the testing dataset
     blended_ratings = [evaluate_combination(c, testing_ratings, lambda_)
                        for c in model_combinations(testing_predictions)]
     # reveal optimal combination and its weight vector
-    opt_comb_names, opt_w, opt_rmse = min(blended_ratings, key=lambda t: t[2])
+    opt_comb, opt_w, opt_rmse = min(blended_ratings, key=lambda t: t[2])
 
     print('Optimal blending is:')
-    spec_len = max(map(len, opt_comb_names))
+    spec_len = max(map(len, opt_comb))
     spec = '  - {model:%d} x {w}' % spec_len
-    for model, w in zip(opt_comb_names, opt_w):
-        print(spec.format(model=model, w=w))
+    for model_name, w in zip(opt_comb, opt_w):
+        print(spec.format(model=model_name, w=w))
     print('With RMSE:', opt_rmse)
 
     # prepare submission user/item pairs and get weighted predictions
     submission_user_item_pairs = get_submission_id_pairs(submission_prediction_files)
-    weighted_submission_predictions = make_weighted_predictions(submission_predictions, opt_comb_names, opt_w)
+    weighted_submission_predictions = make_weighted_predictions(submission_predictions, opt_comb, opt_w)
 
     helpers.write_normalized(output_file, ((u, i, int(round(r)))
                                            for (u, i), r in zip(submission_user_item_pairs,
@@ -128,6 +133,9 @@ def main(ctx, testing_path, testing_predictions_path, submission_predictions_pat
     _print_files(testing_prediction_files)
     _print_files(submission_prediction_files)
 
+    print('WARNING: The files corresponding to the predictions from the same model\n'
+          '         must exactly match pair-wise (in the order showed above)!')
+    print()
     input('Please press ENTER to continue... ')
     blend(testing_path, testing_prediction_files, submission_prediction_files, output_file, lambda_)
 
