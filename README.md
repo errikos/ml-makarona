@@ -1,2 +1,2 @@
-# epfml-crawl
+# ml-makarona
 Machine Learning @ EPFL, 2018
