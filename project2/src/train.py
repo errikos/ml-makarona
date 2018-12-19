@@ -75,7 +75,7 @@ def cli(ctx, **kwargs):
 @click.option('-s', '--seed', type=int, required=False, help='The random seed for the ALS algorithm.')
 @click.pass_context
 def als(ctx, **params):
-    import spark.als as als_spark
+    import models.als_spark as als_spark
     model = Model(**ctx.obj)
     model.train(als_spark.load_ratings, als_spark.train, als_spark.predict, helpers.write_normalized, **params)
 

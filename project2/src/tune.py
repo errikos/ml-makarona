@@ -129,7 +129,7 @@ def cli(ctx, **kwargs):
 @click.option('--ratio', metavar='RATIO', type=float, default=0.9,
               help='The training ratio for the train/test split (default: 0.9).')
 def als(input_path, ratio, **params):
-    import spark.als as als_spark
+    import models.als_spark as als_spark
     tuner = Tuner(input_path, **params)
     tuner.tune(als_spark.load_ratings, als_spark.split_train_test, als_spark.train, als_spark.evaluate, ratio)
 
