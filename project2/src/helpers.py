@@ -5,16 +5,21 @@ import numpy as np
 import pandas as pd
 
 
-def raw_line(line):
-    """Parse one line of the dataset into a (user, item, rating) triplet of strings."""
+def parse_denormalized(line):
+    """Parse one line of the original dataset into a (user, item, rating) triplet of strings."""
     id_, rating = line.strip().split(',')
     user, item = map(lambda x: x[1:], id_.split('_'))
     return user, item, rating
 
 
-def typed_line(line):
+def parse_normalized(line):
+    """Parse one line of the intermediate dataset into a (user, item, rating) triplet of strings."""
+    return line.strip().split(',')
+
+
+def typed_line(line, parser):
     """Parse one line of the dataset into a typed (user, item, rating) triplet."""
-    user, item, rating = raw_line(line)
+    user, item, rating = parser(line)
     return int(user), int(item), float(rating)
 
 
@@ -29,19 +34,19 @@ def read_lines(path, header=True):
 def normalize(input_path, output_path):
     with open(input_path, 'r') as f:
         f.readline()  # skip header
-        triplets = map(raw_line, f.readlines())
+        triplets = map(lambda x: typed_line(x, parse_denormalized), f.readlines())
     with open(output_path, 'w+') as f:
         f.write('user,item,rating\n')  # write header
-        f.writelines('{u},{i},{r}\n'.format(u=str(int(u)-1), i=str(int(i)-1), r=float(r)) for u, i, r in triplets)
+        f.writelines('{u},{i},{r}\n'.format(u=u-1, i=i-1, r=r) for u, i, r in triplets)
 
 
 def denormalize(input_path, output_path):
     with open(input_path, 'r') as f:
         f.readline()  # skip header
-        triplets = [line.strip().split(',') for line in f.readlines()]
+        triplets = map(lambda x: typed_line(x, parse_normalized), f.readlines())
     with open(output_path, 'w+') as f:
-        f.write('Id,Prediction\n')
-        f.writelines('r{u}_c{i},{r}\n'.format(u=str(int(u)+1), i=str(int(i)+1), r=int(r)) for u, i, r in triplets)
+        f.write('Id,Prediction\n')  # write header
+        f.writelines('r{u}_c{i},{r}\n'.format(u=u+1, i=i+1, r=int(r)) for u, i, r in triplets)
 
 
 def write_normalized(output_path, data):
@@ -52,7 +57,7 @@ def write_normalized(output_path, data):
 
 def read_to_df(path):
     """Read the dataset into a pandas DataFrame, one rating triplet per row."""
-    return pd.DataFrame.from_records(map(typed_line, read_lines(path, header=False)),
+    return pd.DataFrame.from_records(map(lambda x: typed_line(x, parse_denormalized), read_lines(path, header=False)),
                                      columns=['user', 'item', 'rating'])
 
 
