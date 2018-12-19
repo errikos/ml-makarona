@@ -9,7 +9,7 @@ import helpers
 
 
 def _list_files(path):
-    return glob.glob(os.path.join(path, '*.csv'))
+    return sorted(glob.glob(os.path.join(path, '*.csv')))
 
 
 def _print_files(files):
@@ -76,9 +76,6 @@ def make_weighted_predictions(submission_ratings, comb_names, w):
 
 
 def blend(testing_dataset_path, testing_prediction_files, submission_prediction_files, output_file, lambda_):
-    testing_prediction_files = sorted(testing_prediction_files)
-    submission_prediction_files = sorted(submission_prediction_files)
-
     get_model_name = lambda p: os.path.splitext(os.path.basename(p))[0]
     # load the real ratings from the testing dataset
     testing_ratings = load_ratings(testing_dataset_path)
