@@ -145,5 +145,17 @@ def user_based(ctx, with_baseline, **params):
     })
 
 
+@cli.command(help='Fit the KNN with z-score for each user algorithm.')
+@click.option('-k', '--neighbours', type=int, help='The maximum number of neighbours to take into account.')
+@click.pass_context
+def z_score(ctx, **params):
+    model = SurpriseModel(**ctx.obj)
+    model.train(**{
+        'train_class': surprise.KNNWithZScore,
+        'sim_options': {'name': 'pearson', 'user_based': False},
+        **params,
+    })
+
+
 if __name__ == '__main__':
     cli(obj={})
