@@ -18,12 +18,13 @@ OUT_DIR = os.path.join('.', 'out')
 MODELS = {
     'ALS': {'cmd': train.als, 'args': {'epochs': 100, 'lambda_': 0.009, 'rank': 10}},
     'Co-Clustering': {'cmd': train.co_cluster, 'args': {'n_epochs': 150, 'n_cltr_u': 2, 'n_cltr_i': 7}},
-    # 'Item-based-KNN': {'cmd': train.item_based, 'args': {'k': 90}},
-    # 'Item-based-KNN-baseline': {'cmd': train.item_based, 'args': {'k': 90, 'with_baseline': True}},
+    'Item-based-KNN': {'cmd': train.item_based, 'args': {'k': 90}},
+    'Item-based-KNN-baseline': {'cmd': train.item_based, 'args': {'k': 90, 'with_baseline': True}},
+    'Slope-One': {'cmd': train.slope_one, 'args': {}},
+    'SVD': {'cmd': train.svd, 'args': {'n_epochs': 400, 'n_factors': 10, 'lr_all': 0.0002, 'reg_all': 0.009}},
+    'SVD++': {'cmd': train.svdpp, 'args': {'n_epochs': 400, 'n_factors': 10, 'lr_all': 0.0002, 'reg_all': 0.009}},
     'User-based-KNN': {'cmd': train.user_based, 'args': {'k': 900}},
-    # 'User-based-KNN-baseline': {'cmd': train.user_based, 'args': {'k': 400, 'with_baseline': True}},
-    # 'SVD': {'cmd': train.svd, 'args': {'n_epochs': 400, 'n_factors': 10, 'lr_all': 0.0002, 'reg_all': 0.009}},
-    # 'SVD++': {'cmd': train.svdpp, 'args': {'n_epochs': 400, 'n_factors': 10, 'lr_all': 0.0002, 'reg_all': 0.009}},
+    'User-based-KNN-baseline': {'cmd': train.user_based, 'args': {'k': 400, 'with_baseline': True}},
 }
 
 

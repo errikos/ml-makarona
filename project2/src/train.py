@@ -103,6 +103,13 @@ def item_based(ctx, with_baseline, **params):
     })
 
 
+@cli.command(help='Fit the Slope One algorithm.')
+@click.pass_context
+def slope_one(ctx, **params):
+    model = SurpriseModel(**ctx.obj)
+    model.train(surprise.SlopeOne, **params)
+
+
 @cli.command(help='Fit the SVD algorithm.')
 @click.option('-e', '--epochs', 'n_epochs', type=int, required=True, help='The number of epochs.')
 @click.option('-f', '--factors', 'n_factors', type=int, required=True, help='The number of factors.')
