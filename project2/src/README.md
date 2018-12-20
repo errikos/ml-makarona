@@ -14,6 +14,9 @@ put them in the `src` directory and run:
                     --output=final_submission.csv
 
 
+The CrowdAI submission ID is 25307 from user "ergys".                    
+
+
 ### Introduction
 
 The project consists of several standalone Python scripts, each of which can be run interactively
