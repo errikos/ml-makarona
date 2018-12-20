@@ -23,7 +23,7 @@ class Model(object):
         :param train_fn: A function that, given the training dataset, returns the trained model object.
         :param predict_fn: A function that, given the trained model and the prediction dataset, returns the
                            predicted values for all (user, item) pairs in the prediction dataset.
-        :param store_fn: A function that, given the predicted values and the output path, writes the predicted
+        :param store_fn: A function that, given the output path and the predicted values, writes the predicted
                          values to that path.
         :param options: Any additional options (key-word arguments) to pass to the training function.
         """
@@ -78,6 +78,34 @@ def als(ctx, **params):
     import models.als_spark as als_spark
     model = Model(**ctx.obj)
     model.train(als_spark.load_ratings, als_spark.train, als_spark.predict, helpers.write_normalized, **params)
+
+
+@cli.command(help='Fit the "user-mean" algorithm, which predicts for all items of a given user '
+                  'the mean value of that user\'s ratings')
+@click.pass_context
+def user_mean(ctx, **params):
+    from models import user_mean
+    model = Model(**ctx.obj)
+    model.train(load_fn=lambda path: map(lambda line: helpers.typed_line(line, parser=helpers.parse_normalized),
+                                         helpers.read_lines(path, header=False)),
+                train_fn=user_mean.train,
+                predict_fn=user_mean.predict,
+                store_fn=helpers.write_normalized,
+                **params)
+
+
+@cli.command(help='Fit the "item-mean" algorithm, which predicts for all items of a given user '
+                  'the mean value of that user\'s ratings')
+@click.pass_context
+def item_mean(ctx, **params):
+    from models import item_mean
+    model = Model(**ctx.obj)
+    model.train(load_fn=lambda path: map(lambda line: helpers.typed_line(line, parser=helpers.parse_normalized),
+                                         helpers.read_lines(path, header=False)),
+                train_fn=item_mean.train,
+                predict_fn=item_mean.predict,
+                store_fn=helpers.write_normalized,
+                **params)
 
 
 @cli.command(help='Fit the Co-Clustering algorithm.')
