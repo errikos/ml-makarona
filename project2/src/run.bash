@@ -46,14 +46,14 @@ mkdir -p "${TEMP_DIR}/predictions_testing"
 mkdir -p "${TEMP_DIR}/predictions_submission"
 
 # normalize the dataset (r{user}_c{item},{rating} -> {user},{item},{rating})
-echo -n "> Normalizing train.csv... "
+echo -n "> Normalizing format of train.csv... "
 python3 tools.py normalize                                              \
     --input "${DATA_DIR}/train.csv"                                     \
     --output "${TEMP_DIR}/train.csv" || exit
 echo "DONE"
 
 # normalize the submission file (r{user}_c{item},{rating} -> {user},{item},{rating})
-echo -n "> Normalizing submission.csv... "
+echo -n "> Normalizing format of submission.csv... "
 python3 tools.py normalize                                              \
     --input "${DATA_DIR}/submission.csv"                                \
     --output "${TEMP_DIR}/submission.csv" || exit
@@ -107,7 +107,7 @@ echo "DONE"
 
 # some cleanup...
 echo -n "> Cleaning up... "
-#rm -rf ${TEMP_DIR}
+rm -rf ${TEMP_DIR}
 echo "DONE"
 
 # be happy

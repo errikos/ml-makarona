@@ -49,14 +49,14 @@ def _prompt_to_continue():
 
 
 def _normalize_datasets(click_ctx):
-    print('> Normalizing train.csv...', end=' ')
+    print('> Normalizing format of train.csv...', end=' ')
     sys.stdout.flush()
     click_ctx.invoke(tools.normalize,
                      input_path=os.path.join(DATA_DIR, 'train.csv'),
                      output_path=os.path.join(TEMP_DIR, 'train.csv'))
     print('DONE')
 
-    print('> Normalizing submission.csv...', end=' ')
+    print('> Normalizing format of submission.csv...', end=' ')
     sys.stdout.flush()
     click_ctx.invoke(tools.normalize,
                      input_path=os.path.join(DATA_DIR, 'submission.csv'),
@@ -145,7 +145,7 @@ def main(ctx, **kwargs):
 
     print()
     _create_submission(ctx)
-    # _cleanup()
+    _cleanup()
 
 
 if __name__ == '__main__':
