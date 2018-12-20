@@ -147,7 +147,7 @@ def co_cluster(input_path, **params):
 @cli.command(help='KNN item-based tuning.')
 @click.argument('input_path', type=click.Path(exists=True))
 @click.option('-b', '--with-baseline', is_flag=True, help='Enable baseline.')
-@click.option('-k', '--neighbours', type=TuneParamType(int), help='Tune the number of neighbours.')
+@click.option('-k', '--neighbours', 'k', type=TuneParamType(int), help='Tune the number of neighbours.')
 def item_based(input_path, with_baseline, **params):
     tuner = SurpriseTuner(input_path, **params)
     tuner.tune(**{
@@ -182,7 +182,7 @@ def svdpp(input_path, **params):
 @cli.command(help='KNN user-based tuning.')
 @click.argument('input_path', type=click.Path(exists=True))
 @click.option('-b', '--with-baseline', is_flag=True, help='Enable baseline.')
-@click.option('-k', '--neighbours', type=TuneParamType(int), help='Tune the number of neighbours.')
+@click.option('-k', '--neighbours', 'k', type=TuneParamType(int), help='Tune the number of neighbours.')
 def user_based(input_path, with_baseline, **params):
     tuner = SurpriseTuner(input_path, **params)
     tuner.tune(**{
@@ -190,6 +190,14 @@ def user_based(input_path, with_baseline, **params):
         'name': ['pearson'] if not with_baseline else ['pearson_baseline'],
         'user_based': [True],
     })
+
+
+@cli.command(help='Fit the KNN with z-score for each user algorithm.')
+@click.argument('input_path', type=click.Path(exists=True))
+@click.option('-k', '--neighbours', 'k', type=TuneParamType(int), help='Tune the number of neighbours.')
+def z_score(input_path, **params):
+    tuner = SurpriseTuner(input_path, **params)
+    tuner.tune(surprise.KNNWithZScore)
 
 
 if __name__ == '__main__':
