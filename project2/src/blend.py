@@ -117,8 +117,6 @@ def blend(testing_dataset_path, testing_prediction_files, submission_prediction_
     submission_user_item_pairs = get_submission_id_pairs(submission_prediction_files)
     weighted_submission_predictions = make_weighted_predictions(submission_predictions, opt_comb, opt_w)
 
-    print()
-    print('Writing output to {f}...'.format(f=output_file))
     helpers.write_normalized(output_file, ((u, i, clip(int(round(r))))
                                            for (u, i), r in zip(submission_user_item_pairs,
                                                                 weighted_submission_predictions)))

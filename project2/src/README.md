@@ -6,13 +6,12 @@
 
 In order to reproduce the CrowdAI submission, download the intermediate files from the Google Drive
 [link](https://drive.google.com/drive/folders/1xK0RSuqCuR9OmThDE2pSX0BdfFxMY094),
-put them in the `src` directory and run the following two commands:
+put them in the `src` directory and run:
 
-    python3 blend.py --testing=intermediate-data/testing.csv \
-                     --testing-predictions=intermediate-data/predictions_testing \
-                     --submission-predictions=intermediate-data/predictions_submission \
-                     --output=blended_submission.csv
-    python3 tools.py denormalize --input blended_submission.csv --output submission_final.csv
+    python3 run.py --testing=intermediate-data/testing.csv \
+                    --testing-predictions=intermediate-data/predictions_testing \
+                    --submission-predictions=intermediate-data/predictions_submission \
+                    --output=final_submission.csv
 
 
 ### Introduction
@@ -64,7 +63,7 @@ For more information, please see: https://conda.io/docs/user-guide/tasks/manage-
 While all scripts accept the various input and out file paths as parameters, the `all.py` and
 `all.bash` scripts expect the `train.csv` and `submission.csv` datasets to be under `data`.
 
-However, `all.py` takes a long time to run, so you will probably want to run `blend.py` with the already
+However, `all.py` takes a long time to run, so you will probably want to run `run.py` with the already
 produced (intermediate) files from the trained models. The format of the intermediate files is slightly
 different from the given dataset files. The differences are:
   * schema: "normalized" to (user, item, rating).
@@ -86,11 +85,10 @@ You can download the intermediate files from [here](https://drive.google.com/ope
 Assuming that you have downloaded the intermediate data in `/home/user/Downloads`, you may
 run the following two commands in order to produce the submission CSV file for CrowdAI.
 
-    python3 blend.py --testing=/home/user/Downloads/intermediate-data/testing.csv \
-                     --testing-predictions=/home/user/Downloads/intermediate-data/predictions_testing \
-                     --submission-predictions=/home/user/Downloads/intermediate-data/predictions_submission \
-                     --output=blended_submission.csv
-    python3 tools.py denormalize --input blended_submission.csv --output submission_final.csv
+    python3 run.py --testing=/home/user/Downloads/intermediate-data/testing.csv \
+                    --testing-predictions=/home/user/Downloads/intermediate-data/predictions_testing \
+                    --submission-predictions=/home/user/Downloads/intermediate-data/predictions_submission \
+                    --output=final_submission.csv
     
 As always, you can see more information on the accepted options with the `--help` parameter.
 
