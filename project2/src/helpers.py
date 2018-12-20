@@ -57,7 +57,7 @@ def write_normalized(output_path, data):
 
 def read_to_df(path):
     """Read the dataset into a pandas DataFrame, one rating triplet per row."""
-    return pd.DataFrame.from_records(map(lambda x: typed_line(x, parse_denormalized), read_lines(path, header=False)),
+    return pd.DataFrame.from_records(map(lambda x: typed_line(x, parse_normalized), read_lines(path, header=False)),
                                      columns=['user', 'item', 'rating'])
 
 
