@@ -34,6 +34,13 @@ def ridge_regression(y, tx, lambda_):
     return np.linalg.solve(a, b)
 
 
+def least_squares(y, tx):
+    """Least squares minimisation algorithm."""
+    left = np.linalg.inv(tx.T.dot(tx))
+    right = tx.T.dot(y)
+    return left.dot(right)
+
+
 def compute_rmse(real, prediction):
     t = real - np.clip(np.round(prediction), a_min=1.0, a_max=5.0)
     n, = t.shape
