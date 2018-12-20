@@ -16,9 +16,8 @@ spark = SparkSession.builder.appName('ALS').getOrCreate()
 
 SEED = 4
 EPOCHS = 100
-LAMBDA = 0.09
+LAMBDA = 0.009
 RANK = 10
-TRAINING_RATIO = 1.0
 
 
 def train(dataset, rank=RANK, epochs=EPOCHS, lambda_=LAMBDA, seed=SEED):
