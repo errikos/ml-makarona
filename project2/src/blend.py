@@ -35,9 +35,9 @@ def ridge_regression(y, tx, lambda_):
 
 
 def compute_rmse(real, prediction):
-    t = real - np.round(prediction)
-    N, = t.shape
-    return np.sqrt(t.dot(t) / N)
+    t = real - np.clip(np.round(prediction), a_min=1.0, a_max=5.0)
+    n, = t.shape
+    return np.sqrt(t.dot(t) / n)
 
 
 def load_ratings(path):
@@ -87,9 +87,18 @@ def blend(testing_dataset_path, testing_prediction_files, submission_prediction_
     # evaluate each combination of the model predictions w.r.t. the testing dataset
     blended_ratings = [evaluate_combination(c, testing_ratings, lambda_)
                        for c in model_combinations(testing_predictions)]
+
+    print()
+    # print some statistics
+    print('Best RMSE per number of models blended:')
+    for _, group in itertools.groupby([(len(ms), rmse) for ms, _, rmse in blended_ratings], key=lambda t: t[0]):
+        cnt, min_rmse = min(group, key=lambda t: t[1])
+        print('  {n:2} models, min(rmse) = {rmse}'.format(n=cnt, rmse=min_rmse))
+
     # reveal optimal combination and its weight vector
     opt_comb, opt_w, opt_rmse = min(blended_ratings, key=lambda t: t[2])
 
+    print()
     print('Optimal blending is:')
     spec_len = max(map(len, opt_comb))
     spec = '  - {model:%d} x {w}' % spec_len
@@ -101,6 +110,8 @@ def blend(testing_dataset_path, testing_prediction_files, submission_prediction_
     submission_user_item_pairs = get_submission_id_pairs(submission_prediction_files)
     weighted_submission_predictions = make_weighted_predictions(submission_predictions, opt_comb, opt_w)
 
+    print()
+    print('Writing output to {f}...'.format(f=output_file))
     helpers.write_normalized(output_file, ((u, i, clip(int(round(r))))
                                            for (u, i), r in zip(submission_user_item_pairs,
                                                                 weighted_submission_predictions)))
@@ -114,7 +125,7 @@ def blend(testing_dataset_path, testing_prediction_files, submission_prediction_
 @click.option('-sp', '--submission-predictions', 'submission_predictions_path', type=click.Path(exists=True),
               required=True, help='Read model predictions for submission dataset from this directory.')
 @click.option('-l', '--lambda', 'lambda_', type=float, default=0.001,
-              help='Regularisation parameter (λ) value for ridge regression (default: 0.0007).')
+              help='Regularisation parameter (λ) value for ridge regression (default: 0.001).')
 @click.option('-o', '--output', 'output_file', type=click.Path(exists=False), required=True,
               help='Write the blended submission file to this directory.')
 @click.pass_context
