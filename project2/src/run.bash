@@ -9,14 +9,18 @@ SPLIT_SEED=988
 
 # these are the models we are going to train and blend
 declare -A MODELS=(
-    ["ALS"]="als --epochs=100 --lambda=0.09 --rank=10"
+    ["ALS"]="als --epochs=100 --lambda=0.009 --rank=10"
     ["Co-Clustering"]="co-cluster --epochs=150 --user-clusters=2 --item-clusters=7"
+    ["Item-Mean"]="item-mean"
     ["Item-based-KNN"]="item-based --neighbours=90"
     ["Item-based-KNN-baseline"]="item-based --with-baseline --neighbours=90"
+    ["User-Mean"]="user-mean"
     ["User-based-KNN"]="user-based --neighbours=900"
     ["User-based-KNN-baseline"]="user-based --with-baseline --neighbours=400"
+    ["Slope-One"]="slope-one"
     ["SVD"]="svd --epochs=400 --factors=10 --learn-rate=0.0002 --reg-term=0.009"
     ["SVD++"]="svd++ --epochs=400 --factors=10 --learn-rate=0.0002 --reg-term=0.009"
+    ["Z-Score"]="z-score --neighbours=90"
 )
 
 # print some user-friendly info
