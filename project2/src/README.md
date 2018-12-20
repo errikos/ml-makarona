@@ -19,14 +19,14 @@ put them in the `src` directory and run the following two commands:
 
 The project consists of several standalone Python scripts, each of which can be run interactively
 from the command line, as well as invoked via the [`click`](https://click.palletsprojects.com)
-context (please see `run.py` for an example).
+context (please see `all.py` for an example).
 
 The name of a script indicates it's functionality. More precisely:
   * `tools.py`: contains various tools for dataset manipulation.
   * `tune.py`: contains commands to tune the hyper-parameters of each model.
   * `train.py`: contains commands to train each mdoel.
   * `blend.py`: blends the models together, based on their predictions.
-  * `run.py`: executes the whole pipeline (training on the 90% training and predicting for the
+  * `all.py`: executes the whole pipeline (training on the 90% training and predicting for the
     10% testing, training on the 100% training and predicting for the submission and, finally,
     blending the results based on the testing dataset RMSE) - this script takes a LOT of time
     to run!
@@ -34,7 +34,7 @@ The name of a script indicates it's functionality. More precisely:
 In order to obtain more information on the commands and the expected parameters of each command,
 please invoke them by passing the `--help` option (either directly to a script or to a command).
 
-There is also a bash script (`run.bash`) which executes exactly the same commands as `run.py`. 
+There is also a bash script (`all.bash`) which executes exactly the same commands as `all.py`. 
 
 
 ### Setting up the Anaconda environment
@@ -61,10 +61,10 @@ For more information, please see: https://conda.io/docs/user-guide/tasks/manage-
 
 ### Data files
 
-While all scripts accept the various input and out file paths as parameters, the `run.py` and
-`run.bash` scripts expect the `train.csv` and `submission.csv` datasets to be under `data`.
+While all scripts accept the various input and out file paths as parameters, the `all.py` and
+`all.bash` scripts expect the `train.csv` and `submission.csv` datasets to be under `data`.
 
-However, `run.py` takes a long time to run, so you will probably want to run `blend.py` with the already
+However, `all.py` takes a long time to run, so you will probably want to run `blend.py` with the already
 produced (intermediate) files from the trained models. The format of the intermediate files is slightly
 different from the given dataset files. The differences are:
   * schema: "normalized" to (user, item, rating).
@@ -76,7 +76,7 @@ In order to easily convert to/from normalized file format, one can use the `tool
 ### How to run
 
 In order to reproduce the results in CrowID, you have two options:
-  * Run the whole pipeline via `run.py` or `run.bash`, which is very slow
+  * Run the whole pipeline via `all.py` or `all.bash`, which is very slow
     (it may take more that 1 day),
     as it has to train 12 models twice (as described above and in the report).
   * Run `blend.py`, providing it with the intermediate files paths.
