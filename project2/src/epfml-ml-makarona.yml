@@ -1,0 +1,18 @@
+name: epfml-ml-makarona
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - conda
+  - click
+  - python=3.6
+  - ipython
+  - numpy
+  - scipy
+  - yapf
+  - pyspark=2.4.0
+  - matplotlib
+  - jupyter
+  - pandas
+  - scikit-surprise
+  - pip
