@@ -1,3 +1,0 @@
-Best RMSE:1.01093968949
-Params:{'n_factors': 10, 'n_epochs': 400, 'lr_all': 0.0002, 'reg_all': 0.009}
-

@@ -1,3 +1,0 @@
-Best RMSE:1.01073666738
-Params:{'n_epochs': 150, 'n_cltr_u': 2, 'n_cltr_i': 7}
-
